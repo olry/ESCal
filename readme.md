@@ -1,3 +1,7 @@
+## Before you begins
+
+We use ELSEPa for differential elastic cross section calculations ( https://www.sciencedirect.com/science/article/pii/S0010465504004795 ). Elsepa is distributed separately, you need to go to http://cpc.cs.qub.ac.uk/cpc/summaries/ADUS , download the archive and extract it into /src/MaterialDatabase/Data/Elsepa/ so that .f, .den and .dsf files are located next to `gelscata.exe`.
+
 # HOW-TO use the framework
 
 First you need to define the material object. 
