@@ -1,10 +1,10 @@
-function diimfp = ndiimfp(osc,E0,decdigs,varargin)
+function diimfp = ndiimfp(osc,E0,decdigs,norm,varargin)
 %%
 %{
    Calculates the normalised DIIMFP
    for a given energy.
 %}
-
+if nargin<4, norm = true; end
 if nargin<3, decdigs=10; end
 if nargin<2
     warning ('Error in input format')
@@ -56,8 +56,11 @@ else
     disp(Y);
     %}
 
-    diimfp = x_in./trapz(eloss,x_in); %normalized
-    %diimfp = x_in; %for imfp calculation
+    if norm
+        diimfp = x_in./trapz(eloss,x_in); %normalized
+    else
+        diimfp = x_in; %for imfp calculation
+    end
 
 end
 
