@@ -12,10 +12,12 @@ if nargin<3
     warning ('Error in input format')
 else
     
-    qmin = sqrt(2*E0/h2ev)-sqrt(2*(E0/h2ev-osc.eloss/h2ev));
-    qmax = sqrt(2*E0/h2ev)+sqrt(2*(E0/h2ev-osc.eloss/h2ev));
+    ind = bsxfun(@gt,osc.eloss,0);
+    eloss = osc.eloss; 
+    qmin = sqrt(2*E0/h2ev)-sqrt(2*(E0/h2ev-osc.eloss(ind)/h2ev));
+    qmax = sqrt(2*E0/h2ev)+sqrt(2*(E0/h2ev-osc.eloss(ind)/h2ev));
     
-    q = zeros(length(osc.eloss),2^(decdigs-1)+1);
+    q = zeros(length(osc.eloss(ind)),2^(decdigs-1)+1);
     x_in_plus = zeros(size(osc.eloss));
     x_in_minus = zeros(size(osc.eloss));
     
@@ -23,8 +25,14 @@ else
         q(:,i) = qmin + (i-1)*(qmax-qmin)/2.^(decdigs-1);
     end
     
+    if strcmp( osc.model,'Mermin')
+        q(q==0) = 0.01;
+    end
+    
     osc.qtran = q/a0;
-    ELF=eps_sum_surf(osc);
+    osc.eloss = eloss(ind);
+    
+    ELF = eps_sum_surf(osc);
     
     q_s_plus = sqrt(q.^2 - ( bsxfun(@plus,(osc.eloss/h2ev)',q.^2./2) ./ sqrt(2*E0/h2ev) ).^2).*cosd(theta) + ( bsxfun(@plus,(osc.eloss/h2ev)',q.^2./2) ./sqrt(2*E0/h2ev)).*sind(theta); 
     q_s_minus = sqrt(q.^2 - ( bsxfun(@plus,(osc.eloss/h2ev)',q.^2./2) ./ sqrt(2*E0/h2ev) ).^2).*cosd(theta) - ( bsxfun(@plus,(osc.eloss/h2ev)',q.^2./2) ./sqrt(2*E0/h2ev)).*sind(theta);
@@ -34,20 +42,23 @@ else
     res_plus(isnan(res_plus))=0;
     res_minus(isnan(res_minus))=0;
     
-    for i=1:length(osc.eloss)
-        x_in_plus(i) = 1/pi/(E0/h2ev) * trapz(q(i,:),res_plus(i,:))/h2ev;
-        x_in_minus(i) = 1/pi/(E0/h2ev) * trapz(q(i,:),res_minus(i,:))/h2ev;
+    x_in_plus(1) = 0.0;
+    x_in_minus(1) = 0.0;
+    
+    for i=2:length(osc.eloss)
+        x_in_plus(i) = 1/pi/(E0/h2ev) * trapz(q(i,:),res_plus(i,:)) *(1/h2ev/a0);
+        x_in_minus(i) = 1/pi/(E0/h2ev) * trapz(q(i,:),res_minus(i,:)) *(1/h2ev/a0);
     end
 
     %% Plot
-    figure;
-    xlim([0 100])
-    hold on
-    box on
-    plot(osc.eloss,x_in_plus + x_in_minus)
-   
-    Y = ['siimfp = ',num2str(trapz(osc.eloss,x_in_plus + x_in_minus))];
-    disp(Y);
+%     figure;
+%     xlim([0 100])
+%     hold on
+%     box on
+%     plot(eloss,x_in_plus + x_in_minus)
+%    
+%     Y = ['siimfp = ',num2str(trapz(eloss,x_in_plus + x_in_minus))];
+%     disp(Y);
 
     dsep = x_in_plus + x_in_minus; %./trapz(osc.eloss,x_in);
 end
