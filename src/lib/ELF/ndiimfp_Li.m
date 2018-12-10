@@ -151,7 +151,8 @@ else
 %     disp(Y);
     
     %dsep = (x_in+x_b+x_in_b)./trapz(osc.eloss,x_in+x_b+x_in_b);
-    dsep = x_in+x_b+x_in_b; %./trapz(osc.eloss,x_in);   % only surface component
+    dsep = x_in + x_b + x_in_b; %./trapz(osc.eloss,x_in); 
+    %dsep = x_in; %./trapz(osc.eloss,x_in); % only surface component
     diimfp = x_b; %./trapz(osc.eloss,x_b);   % clear bulk  
 end
 

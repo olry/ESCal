@@ -77,16 +77,8 @@ elseif strcmp( osc.model,'DrudeLindhard')
 elseif strcmp( osc.model,'Mermin')
     eps1 = zeros(size(q));
     for j=1:length(osc.A)
-        if isfield(osc,'numion') && j>length(osc.A) - osc.numion
-            epsMerm = Mermin(q,w,osc.G(j),osc.Om(j),true);
-            ind = bsxfun(@ne,epsMerm,0);
-            eps1(ind) = eps1(ind) + osc.A(j)*(complex(1,0)./epsMerm(ind));
-        else
-            epsMerm = Mermin(q,w,osc.G(j),osc.Om(j),false);
-            eps1 = eps1 + osc.A(j)*(complex(1,0)./epsMerm);
-        end
-%         eps_temp = osc.A(j)*(complex(1,0)./epsMerm); %to plot oscillators
-%         plot(w,imag(-1./(complex(1,0)./eps_temp)));
+        epsMerm = Mermin(q,w,osc.G(j),osc.Om(j));
+        eps1 = eps1 + osc.A(j)*(complex(1,0)./epsMerm);
     end
     eps = complex(1,0)./eps1;
     ELF = imag(bsxfun(@rdivide,(eps-1).^2,bsxfun(@times,eps,eps+1)));
