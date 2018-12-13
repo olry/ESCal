@@ -1,4 +1,4 @@
-function [diimfp,dsep,siimfp,biimfp] = ndiimfp_Li(osc,E0,depth,alpha,decdigs,varargin)
+function [diimfp,dsep,bulk,surf] = ndiimfp_Li(osc,E0,depth,alpha,decdigs,varargin)
 
 %%
 %{
@@ -152,6 +152,8 @@ else
     
     %dsep = (x_in+x_b+x_in_b)./trapz(osc.eloss,x_in+x_b+x_in_b);
     dsep = x_in + x_b + x_in_b; %./trapz(osc.eloss,x_in); 
+    surf = x_in;
+    bulk = x_b + x_in_b;
     %dsep = x_in; %./trapz(osc.eloss,x_in); % only surface component
     diimfp = x_b; %./trapz(osc.eloss,x_b);   % clear bulk  
 end
