@@ -52,6 +52,16 @@ elseif strcmp( osc.model,'DrudeLindhard')
         eps_im(w>osc.egap,:) = eps_im(w>osc.egap,:) + osc.A(j)*epsDrud_im(w>osc.egap,:);
     end
     ELF = eps_im;
+elseif strcmp( osc.model,'DrudeLorentz')
+    
+    eps_re = ones(numel(w),numel(q));
+    eps_im = zeros(numel(w),numel(q));
+    for j=1:length(osc.A)
+        [epsDrud_re, epsDrud_im] = DrudeLorentz(q,w,osc.Om(j),osc.G(j),osc.alpha_g(j),osc.beta_g(j),osc.alpha,osc.Ef);
+        eps_re = eps_re + osc.A(j)*epsDrud_re;
+        eps_im(w>osc.egap,:) = eps_im(w>osc.egap,:) + osc.A(j)*epsDrud_im(w>osc.egap,:);
+    end
+    ELF = eps_im;
 elseif strcmp( osc.model,'Mermin')
     eps1 = zeros(numel(w),numel(q));
     for j=1:length(osc.A)

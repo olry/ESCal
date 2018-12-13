@@ -60,6 +60,17 @@ elseif strcmp( osc.model,'DrudeLindhard')
         eps_im(ind,:) = eps_im(ind,:) + osc.A(j)*epsDrud_im(ind,:);
     end
     ELF = eps_im;
+elseif strcmp( osc.model,'DrudeLorentz')
+    
+    eps_re = zeros(size(q));
+    eps_im = zeros(size(q));
+    for j=1:length(osc.A)
+        [epsDrud_re, epsDrud_im] = DrudeLorentz(q,w,osc.Om(j),osc.G(j),osc.alpha_g(j),osc.beta_g(j),osc.alpha,osc.Ef);
+        eps_re = eps_re + osc.A(j)*epsDrud_re;
+        ind = bsxfun(@gt,w,osc.egap);
+        eps_im(ind,:) = eps_im(ind,:) + osc.A(j)*epsDrud_im(ind,:);
+    end
+    ELF = eps_im;
 elseif strcmp( osc.model,'Mermin')
     eps1 = zeros(size(q));
     for j=1:length(osc.A)
