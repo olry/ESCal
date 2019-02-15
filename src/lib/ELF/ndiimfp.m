@@ -56,7 +56,7 @@ else
     disp(Y);
     %}
 
-    if norm
+    if (norm)
         diimfp = x_in./trapz(eloss,x_in); %normalized
     else
         diimfp = x_in; %for imfp calculation

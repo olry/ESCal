@@ -1,8 +1,8 @@
-function [diimfp,dsep,siimfp,biimfp] = ndiimfp_Li(osc,E0,depth,alpha,decdigs,varargin)
+function [dsep,siimfp] = ndiimfp_Li_dsep(osc,E0,depth,alpha,decdigs,varargin)
 
 %%
 %{
-   Calculates the normalised DSEP (in eV^-1*A^-1) and DIIMFP (in eV^-1)
+   Calculates the normalised DSEP (in eV^-1*A^-1)
    for a given energy, angle and depth
    from solid to vacuum
    according to the Li algorithm Eq.(9) from
@@ -49,47 +49,12 @@ else
     Qv_per = Q.^2.*v_per^2;
     bottom = bsxfun(@plus,w_wave.^2,Qv_per);
     
-    %% Bulk
-    x_in_b = zeros(length(osc.eloss),length(depth));
-    x_b = zeros(length(osc.eloss),length(depth));
-    
-    %================ clear bulk =====================
-    osc.qtran = q/a0;
-    ELF = eps_sum_allwq(osc,'bulk');
-    res = ELF./q;
-    res(isnan(res))=0;
-
-    for i=1:length(osc.eloss)
-        for j = 1:length(depth)
-            x_b(i,j) = 1/pi/(E0/h2ev)*stepfunction(-depth(j)) * trapz(q(i,:),res(i,:))/h2ev/a0;
-        end
-    end
-    
-    %=============== reduced bulk =====================
     exdimdep = repmat(Q, 1, 1, 1, length(phi),length(r)); %add extra dimension over r
     exprQ = bsxfun(@times,reshape((-1)*abs(r),1,1,1,1,[]),exdimdep).*cosd(alpha);
     top_in = bsxfun(@times,bsxfun(@times,qsintheta,cos(qzrcos)),exp(exprQ));
-    
-    for i = 1:length(theta)
-        osc.qtran = Q(:,:,i)/a0;
-        Im(:,:,i) = eps_sum_allwq(osc,'bulk');
-    end
-    
     topbot = bsxfun(@rdivide,top_in,repmat(bottom, 1, 1, 1, 1, length(r)));
-    romall_in = bsxfun(@times,Im,topbot);
-    romall_in(isnan(romall_in))=0;
     ind0 = bsxfun(@eq,depth,0);
-    romall_in(:,:,:,:,ind0) = romall_in(:,:,:,:,ind0).*0.5;
     ind = bsxfun(@gt,depth,0);
-    romall_in(:,:,:,:,ind) = 0;
-    res_in = squeeze(trapz(theta,trapz(phi,romall_in,4),3));
-
-    for i=1:length(osc.eloss)
-        for j = 1:length(depth)
-            x_in_b(i,j) = (-2)*cosd(alpha)/(pi^3) * trapz(q(i,:),res_in(i,:,j),2) /h2ev/a0;
-        end
-    end
-
     
     %% Surface
     x_in = zeros(length(osc.eloss),length(depth));
@@ -126,55 +91,9 @@ else
         end
     end
     
-    %% siimfp/biimfp
-    siimfp = trapz(osc.eloss,x_in); % + x_b + x_in_b,1);
-    biimfp = trapz(osc.eloss,x_in_b+x_b,1);
-    biimfp(biimfp<0)=0;
-%     iimfp = trapz(osc.eloss,x_in_b+x_b+x_in,1);
-%     figure;
-%     plot(depth,siimfp,depth,biimfp,depth,siimfp+biimfp)
-    
-    %% Plot
-%     figure;
-%     xlim([0 100])
-%     hold on
-%     box on
-%     plot(osc.eloss,x_b(:,1))
-%     plot(osc.eloss,x_b(:,1) + x_in_b(:,1))
-%     plot(osc.eloss,x_in(:,1))
-%     plot(osc.eloss,x_b(:,1) + x_in_b(:,1) + x_in(:,1))
-%     legend('Clear bulk','Reduced bulk','Surface','DIIMFP');
-%     
-%     Y = ['siimfp = ',num2str(siimfp)];
-%     disp(Y);
-%     Y = ['biimfp = ',num2str(biimfp)];
-%     disp(Y);
-    
-    %dsep = (x_in+x_b+x_in_b)./trapz(osc.eloss,x_in+x_b+x_in_b);
-    %dsep = x_in + x_b + x_in_b; %./trapz(osc.eloss,x_in); 
-    dsep = x_in; %./trapz(osc.eloss,x_in); % only surface component
-    diimfp = x_b; %./trapz(osc.eloss,x_b);   % clear bulk  
+    siimfp = trapz(osc.eloss,x_in);
+   
+    dsep = x_in; %./trapz(osc.eloss,x_in); % only surface component 
 end
-
-%% Heaviside function
-    function x = stepfunction(depth)
-        if depth > 0
-            x = 1;
-        elseif depth < 0
-            x = 0;
-        elseif depth==0
-            x = 0.5;
-        end
-    end
-
-end
-
-
-
-
-
-
-
-
 
 
