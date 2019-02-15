@@ -46,7 +46,8 @@ if strcmp( osc.model,'Drude')
     if strcmp(interface,'bulk')
         ELF = imag(-1./eps);
     elseif strcmp(interface,'surface')
-        ELF = eps_im./((eps_re+1).^2 + eps_im.^2);
+        %ELF = eps_im./((eps_re+1).^2 + eps_im.^2);
+        ELF = imag(-1./(eps+1));
     end
 elseif strcmp( osc.model,'DrudeLindhard')
     
