@@ -59,7 +59,11 @@ elseif strcmp( osc.model,'DrudeLindhard')
         ind = bsxfun(@gt,w,osc.egap);
         eps_im(ind,:) = eps_im(ind,:) + osc.A(j)*epsDrud_im(ind,:);
     end
-    ELF = eps_im;
+    if strcmp(interface,'bulk')
+        ELF = eps_im;
+    elseif strcmp(interface,'surface')
+        error('The DrudeLindhard model cannot be used for surface calculations');
+    end
 elseif strcmp( osc.model,'DrudeLorentz')
     
     eps_re = zeros(size(q));

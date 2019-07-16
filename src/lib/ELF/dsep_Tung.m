@@ -32,7 +32,8 @@ else
     osc.qtran = q/a0;
     osc.eloss = eloss(ind);
     
-    ELF = eps_sum_surf(osc);
+%     ELF = eps_sum_surf(osc);
+    ELF = eps_sum_allwq(osc,'surface');
     
     q_s_plus = sqrt(q.^2 - ( bsxfun(@plus,(osc.eloss/h2ev)',q.^2./2) ./ sqrt(2*E0/h2ev) ).^2).*cosd(theta) + ( bsxfun(@plus,(osc.eloss/h2ev)',q.^2./2) ./sqrt(2*E0/h2ev)).*sind(theta); 
     q_s_minus = sqrt(q.^2 - ( bsxfun(@plus,(osc.eloss/h2ev)',q.^2./2) ./ sqrt(2*E0/h2ev) ).^2).*cosd(theta) - ( bsxfun(@plus,(osc.eloss/h2ev)',q.^2./2) ./sqrt(2*E0/h2ev)).*sind(theta);

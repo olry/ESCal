@@ -1,4 +1,4 @@
-function [diimfp,dsep,bulk,surf] = ndiimfp_Li(osc,E0,depth,alpha,decdigs,varargin)
+function [diimfp,dsep,siimfp] = ndiimfp_Li(osc,E0,depth,alpha,decdigs,varargin)
 
 %%
 %{
