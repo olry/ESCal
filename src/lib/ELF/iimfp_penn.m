@@ -1,4 +1,4 @@
-function iimfp = iimfp_penn(E0)
+function iimfp = iimfp_penn(E0,filename,colnum)
 %%
 %{
    Calculates the IMFP values from optical data.
@@ -22,13 +22,12 @@ function iimfp = iimfp_penn(E0)
 % ind = find(histc(E0,x));
 % Im = eps2./(eps1.^2+eps2.^2);
 
-l = load('auopt'); %load a file with Palik's data
-au = l.au;
-ind = find(histc(E0,au(:,1)));
-x = au(1:ind,1);
+l = load(filename); %load a file with Palik's data
+ind = find(histcounts(E0,l(:,1)));
+x = l(1:ind,1);
 
 w = x/h2ev;
-ELF = au(1:ind,4);
+ELF = l(1:ind,colnum);
     
 x_in = zeros(length(w),1);
     

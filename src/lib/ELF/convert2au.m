@@ -1,4 +1,4 @@
-function X=convert2au(osc)
+function X = convert2au(osc)
 % converts values to atomic units
 if strcmp( osc.model,'Drude')
     osc.A = osc.A/h2ev/h2ev;

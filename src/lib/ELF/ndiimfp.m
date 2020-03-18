@@ -5,7 +5,7 @@ function diimfp = ndiimfp(osc,E0,decdigs,norm,varargin)
    for a given energy.
 %}
 if nargin<4, norm = true; end
-if nargin<3, decdigs=10; end
+if nargin<3, decdigs = 10; end
 if nargin<2
     warning ('Error in input format')
 else
@@ -43,18 +43,6 @@ else
     for i=2:length(osc.eloss)
         x_in(i) = 1/pi/(E0/h2ev) * trapz(q(i,:),res(i,:)) *(1/h2ev/a0);
     end
-
-    %% Plot
-    %{
-    figure;
-    xlim([0 100])
-    hold on
-    box on
-    plot(osc.eloss,x_in)
-   
-    Y = ['biimfp = ',num2str(trapz(osc.eloss,x_in))];
-    disp(Y);
-    %}
 
     if (norm)
         diimfp = x_in./trapz(eloss,x_in); %normalized

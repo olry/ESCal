@@ -51,9 +51,8 @@ else
     if strcmp(osc.model,'Mermin')
         q(0.001<q==0) = 0.01;
     end
-    osc.qtran = q/a0;
         
-    theta = 0:pi/2/10:pi/2;
+    theta = 0:pi/2/5:pi/2;
     phi = 0:2*pi/10:2*pi;
     
     Im = zeros(length(osc.eloss),2^(decdigs-1)+1,length(theta));
