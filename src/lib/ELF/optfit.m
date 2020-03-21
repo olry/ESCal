@@ -16,32 +16,32 @@ lb = structToVec(osc_min);
 ub = structToVec(osc_max);
 
 %% LSQ fitting (local minimum search)
-
+%{
 options = optimoptions('lsqcurvefit','OptimalityTolerance', 1e-16, 'FunctionTolerance', 1e-16,'PlotFcn',@optimplotx,'Display','iter-detailed','UseParallel',true);
 options.FunctionTolerance = 1.000000e-12;
 options.OptimalityTolerance = 1.000000e-12;
 options.MaxFunctionEvaluations = 7000;
 options.StepTolerance = 1e-12;
 x_res = lsqcurvefit(@fit_func, structToVec(osc), x_exp, y_exp, lb, ub, options);
-
+%}
 %% Global
 
-% rng default % For reproducibility
+rng default % For reproducibility
 % %gs = GlobalSearch;
 % 
-% problem = createOptimProblem('fmincon',...
-%    'objective',@fit_func_2,...
-%    'x0',structToVec(osc),'options',...
-%    optimoptions('fmincon','Algorithm','sqp','Display','iter','UseParallel',true));
-% problem.lb = lb;
-% problem.ub = ub;
-% problem.options.MaxIterations = 1e4;
-% problem.options.OptimalityTolerance = 1e-10;
-% problem.options.StepTolerance = 1e-10;
-% problem.options.MaxFunctionEvaluations = 1e4;
+problem = createOptimProblem('fmincon',...
+   'objective',@fit_func_2,...
+   'x0',structToVec(osc),'options',...
+   optimoptions('fmincon','Algorithm','sqp','Display','iter','UseParallel',true));
+problem.lb = lb;
+problem.ub = ub;
+problem.options.MaxIterations = 1e4;
+problem.options.OptimalityTolerance = 1e-10;
+problem.options.StepTolerance = 1e-10;
+problem.options.MaxFunctionEvaluations = 1e4;
 % % [x_res] = run(gs,problem);
 % 
-% x_res = fmincon(problem);
+x_res = fmincon(problem);
 
 an = vecToStruct(x_res);
 disp(an);
@@ -75,7 +75,7 @@ fit_result = an;
 
 an_au = convert2au(an);
 bsum = 1/(2*pi^2)*trapz(an_au.eloss,bsxfun(@times,an_au.eloss,eps_sum(an)));
-psum = 2/pi*trapz(an_au.eloss,bsxfun(@rdivide,eps_sum(an),an_au.eloss));
+psum = 2/pi*trapz(an.eloss,bsxfun(@rdivide,eps_sum(an),an.eloss));
 
 disp(['P-sum rule: ',num2str(psum)]);
 disp(['Bethe sum rule: ',num2str(bsum), ' electron density = ',num2str(osc.ne*a0^3), '(a.u.^-3)']);
@@ -107,7 +107,7 @@ function osc_scaled = scaling(o)
             w_ScalingFactor = sqrt((eps1(1) - o.beps)/(o.n_refrac^2 - o.beps));
             o.Om = o.Om / w_ScalingFactor;
         case 'DrudeLindhard'
-            o.A = o.A/sum(o.A);
+            o.A = o.A/sum(o.A)*(1-1/o.n_refrac^2);
             BetheSum = sum((pi/2)*o.A.*o.Om.^2);
             BetheValue = 2*pi*pi*o.ne*a0^3;
             w_ScalingFactor = sqrt(BetheSum / BetheValue);
