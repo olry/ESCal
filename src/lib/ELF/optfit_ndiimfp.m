@@ -1,4 +1,4 @@
-function fit_result = optfit(x_exp,y_exp,E0,osc)
+function fit_result = optfit_ndiimfp(x_exp,y_exp,E0,osc)
 
 osc_min.A = zeros(size(osc.A));
 osc_min.G = ones(size(osc.G))*0.02; 
@@ -23,9 +23,7 @@ ub = structToVec(osc_max);
 
 %% Global
 
-rng default % For reproducibility
-%gs = GlobalSearch;
-
+rng default 
 problem = createOptimProblem('fmincon',...
    'objective',@fit_func_2,...
    'x0',structToVec(osc),'options',...
@@ -36,7 +34,6 @@ problem.options.MaxIterations = 1e4;
 problem.options.OptimalityTolerance = 1e-12;
 problem.options.StepTolerance = 1e-12;
 problem.options.MaxFunctionEvaluations = 1e6;
-% [x_res] = run(gs,problem);
 
 x_res = fmincon(problem);
 
