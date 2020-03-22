@@ -35,10 +35,10 @@ problem = createOptimProblem('fmincon',...
    optimoptions('fmincon','Algorithm','sqp','Display','iter','UseParallel',true));
 problem.lb = lb;
 problem.ub = ub;
-problem.options.MaxIterations = 1e4;
-problem.options.OptimalityTolerance = 1e-10;
-problem.options.StepTolerance = 1e-10;
-problem.options.MaxFunctionEvaluations = 1e4;
+problem.options.MaxIterations = 1e5;
+problem.options.OptimalityTolerance = 1e-12;
+problem.options.StepTolerance = 1e-12;
+problem.options.MaxFunctionEvaluations = 1e5;
 % % [x_res] = run(gs,problem);
 % 
 x_res = fmincon(problem);
@@ -55,8 +55,8 @@ plot(x_exp,fit_func(x_res,x_exp),'DisplayName','This work','LineWidth',2);
 
 ylabel('nDIIMFP');
 xlabel('Energy loss $\omega$, eV');
-
-title(osc.name);
+txt = [osc.name,' ',osc.model];
+title(txt);
 set(findall(gcf,'-property','FontSize'),'FontSize',24)
 xlim([0 150]);
 
@@ -75,7 +75,7 @@ fit_result = an;
 
 an_au = convert2au(an);
 bsum = 1/(2*pi^2)*trapz(an_au.eloss,bsxfun(@times,an_au.eloss,eps_sum(an)));
-psum = 2/pi*trapz(an.eloss,bsxfun(@rdivide,eps_sum(an),an.eloss));
+psum = 2/pi*trapz(an.eloss,bsxfun(@rdivide,eps_sum(an),an.eloss)) + 1/an.n_refrac^2;
 
 disp(['P-sum rule: ',num2str(psum)]);
 disp(['Bethe sum rule: ',num2str(bsum), ' electron density = ',num2str(osc.ne*a0^3), '(a.u.^-3)']);
