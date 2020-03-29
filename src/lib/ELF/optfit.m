@@ -36,8 +36,8 @@ problem = createOptimProblem('fmincon',...
 problem.lb = lb;
 problem.ub = ub;
 problem.options.MaxIterations = 1e5;
-problem.options.OptimalityTolerance = 1e-12;
-problem.options.StepTolerance = 1e-12;
+problem.options.OptimalityTolerance = 1e-15;
+problem.options.StepTolerance = 1e-15;
 problem.options.MaxFunctionEvaluations = 1e5;
 % % [x_res] = run(gs,problem);
 % 
@@ -63,16 +63,16 @@ xlim([0 150]);
 set(h,'Units','Inches');
 pos = get(h,'Position');
 set(h,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
-txt = [osc.name, '_fit'];
+txt = [osc.name, '_fit_',osc.model];
 print(h,txt,'-dpdf','-r0')
-txt = [osc.name,'_fit.fig'];
+txt = [osc.name,'_fit_',osc.model,'.fig'];
 savefig(txt)
 
 %% Sum-rules
 
 an = scaling(an);
 fit_result = an;
-
+an.eloss = [eps:0.1:10000]';
 an_au = convert2au(an);
 bsum = 1/(2*pi^2)*trapz(an_au.eloss,bsxfun(@times,an_au.eloss,eps_sum(an)));
 psum = 2/pi*trapz(an.eloss,bsxfun(@rdivide,eps_sum(an),an.eloss)) + 1/an.n_refrac^2;
