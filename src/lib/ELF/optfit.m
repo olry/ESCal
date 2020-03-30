@@ -54,7 +54,7 @@ hold on
 plot(x_exp,fit_func(x_res,x_exp),'DisplayName','This work','LineWidth',2);
 
 ylabel('nDIIMFP');
-xlabel('Energy loss $\omega$, eV');
+xlabel('Energy loss $\omega$ (eV)');
 txt = [osc.name,' ',osc.model];
 title(txt);
 set(findall(gcf,'-property','FontSize'),'FontSize',24)
