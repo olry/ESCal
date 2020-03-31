@@ -58,7 +58,7 @@ xlabel('Energy loss $\omega$ (eV)');
 txt = [osc.name,' ',osc.model];
 title(txt);
 set(findall(gcf,'-property','FontSize'),'FontSize',24)
-xlim([0 150]);
+xlim([0 100]);
 
 set(h,'Units','Inches');
 pos = get(h,'Position');
@@ -108,6 +108,12 @@ function osc_scaled = scaling(o)
             o.Om = o.Om / w_ScalingFactor;
         case 'DrudeLindhard'
             o.A = o.A/sum(o.A)*(1-1/o.n_refrac^2);
+            BetheSum = sum((pi/2)*o.A.*o.Om.^2);
+            BetheValue = 2*pi*pi*o.ne*a0^3;
+            w_ScalingFactor = sqrt(BetheSum / BetheValue);
+            o.Om = o.Om / w_ScalingFactor;
+        case 'Mermin'
+            o.A = o.A/sum(o.A); %*(1-1/o.n_refrac^2);
             BetheSum = sum((pi/2)*o.A.*o.Om.^2);
             BetheValue = 2*pi*pi*o.ne*a0^3;
             w_ScalingFactor = sqrt(BetheSum / BetheValue);
