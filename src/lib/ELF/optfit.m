@@ -72,7 +72,7 @@ savefig(txt)
 
 an = scaling(an);
 fit_result = an;
-an.eloss = [eps:0.1:10000]';
+%an.eloss = [eps:0.1:10000]';
 an_au = convert2au(an);
 bsum = 1/(2*pi^2)*trapz(an_au.eloss,bsxfun(@times,an_au.eloss,eps_sum(an)));
 psum = 2/pi*trapz(an.eloss,bsxfun(@rdivide,eps_sum(an),an.eloss)) + 1/an.n_refrac^2;
@@ -113,7 +113,7 @@ function osc_scaled = scaling(o)
             w_ScalingFactor = sqrt(BetheSum / BetheValue);
             o.Om = o.Om / w_ScalingFactor;
         case 'Mermin'
-            o.A = o.A/sum(o.A); %*(1-1/o.n_refrac^2);
+            o.A = o.A/sum(o.A)*(1-1/o.n_refrac^2);
             BetheSum = sum((pi/2)*o.A.*o.Om.^2);
             BetheValue = 2*pi*pi*o.ne*a0^3;
             w_ScalingFactor = sqrt(BetheSum / BetheValue);
