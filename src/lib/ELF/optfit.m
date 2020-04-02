@@ -72,7 +72,7 @@ savefig(txt)
 
 an = scaling(an);
 fit_result = an;
-%an.eloss = [eps:0.1:10000]';
+an.eloss = [eps:0.01:E0]';
 an_au = convert2au(an);
 bsum = 1/(2*pi^2)*trapz(an_au.eloss,bsxfun(@times,an_au.eloss,eps_sum(an)));
 psum = 2/pi*trapz(an.eloss,bsxfun(@rdivide,eps_sum(an),an.eloss)) + 1/an.n_refrac^2;
