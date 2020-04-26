@@ -8,9 +8,9 @@ osc_min.A = zeros(size(osc.A));
 osc_min.G = ones(size(osc.G))*0.02; 
 osc_min.Om = zeros(size(osc.A));
 
-osc_min.G(1) = osc.G(1)*0.5;
-osc_min.Om(1) = osc.Om(1)*0.5;
-osc_min.A(1) = 0.05;
+% osc_min.G(1) = osc.G(1)*0.5;
+% osc_min.Om(1) = osc.Om(1)*0.5;
+% osc_min.A(1) = 0.05;
 % osc_min.A(5) = 0.01;
 % osc_min.A(7) = 0.01;
 
@@ -21,14 +21,18 @@ switch osc.model
         coef = 1;
     case 'Mermin'
         coef = 1;
+    case 'MerminLL'
+        coef = 1;
+        osc_min.u = 0;
+        osc_max.u = 20;
 end
        
 osc_max.A = ones(size(osc.A))*coef;
 osc_max.G = ones(size(osc.A))*100;
 osc_max.Om = ones(size(osc.A))*x_exp(end);
 
-osc_max.G(1) = osc.G(1)*1.2;
-osc_max.Om(1) = osc.Om(1)*1.2;
+% osc_max.G(1) = osc.G(1)*1.2;
+% osc_max.Om(1) = osc.Om(1)*1.2;
 
 lb = structToVec(osc_min);
 ub = structToVec(osc_max);
@@ -105,7 +109,11 @@ disp(['F-sum rule:',num2str(fsum), ' EAN = ', num2str(osc.Z)]);
 %% Functions
 
 function v = structToVec(s)
-    v = [s.A, s.G, s.Om];
+    if strcmp( osc.model,'MerminLL')
+        v = [s.A, s.G, s.Om, s.u];
+    else
+        v = [s.A, s.G, s.Om];
+    end
 end
 
 function s = vecToStruct(v)   
@@ -114,6 +122,9 @@ function s = vecToStruct(v)
     s.A = v(1:nA);
     s.G = v((1:nA)+nA);
     s.Om = v((1:nA)+nA*2);
+    if strcmp( osc.model,'MerminLL')
+        s.u = v(end);
+    end
 end
 
 function osc_scaled = scaling(o)
@@ -131,6 +142,12 @@ function osc_scaled = scaling(o)
             w_ScalingFactor = sqrt(BetheSum / BetheValue);
             o.Om = o.Om / w_ScalingFactor;
         case 'Mermin'
+            o.A = o.A/sum(o.A)*(1-1/o.n_refrac^2);
+            BetheSum = sum((pi/2)*o.A.*o.Om.^2);
+            BetheValue = 2*pi*pi*o.ne*a0^3;
+            w_ScalingFactor = sqrt(BetheSum / BetheValue);
+            o.Om = o.Om / w_ScalingFactor;
+        case 'MerminLL'
             o.A = o.A/sum(o.A)*(1-1/o.n_refrac^2);
             BetheSum = sum((pi/2)*o.A.*o.Om.^2);
             BetheValue = 2*pi*pi*o.ne*a0^3;

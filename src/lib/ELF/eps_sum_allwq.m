@@ -89,7 +89,7 @@ elseif strcmp( osc.model,'Mermin')
     end
     eps_im(w<osc.egap,:) = 0;
     ELF = eps_im;
-elseif strcmp( osc.model,'Mermin_LL')
+elseif strcmp( osc.model,'MerminLL')
     eps1 = zeros(size(q));
     for j=1:length(osc.A)
         epsMerm = Mermin_LL(q,w,osc.G(j),osc.Om(j),osc.u);
@@ -98,7 +98,7 @@ elseif strcmp( osc.model,'Mermin_LL')
     eps = complex(1,0)./eps1;
     ELF = imag(-1./eps);
 else
-    error('Choose the correct model name: Drude,DrudeLindhard,Mermin,Mermin_LL');
+    error('Choose the correct model name: Drude,DrudeLindhard,Mermin,MerminLL');
     
 end
 end

@@ -72,7 +72,7 @@ elseif strcmp(osc.model,'Mermin')
     eps_im = imag(-1./eps);
     eps_im(w<osc.egap,:) = 0;
     ELF = eps_im;
-elseif strcmp( osc.model,'Mermin_LL')
+elseif strcmp( osc.model,'MerminLL')
     eps1 = zeros(numel(w),numel(q));
     for j=1:length(osc.A)
         epsMerm = Mermin_LL(q,w,osc.G(j),osc.Om(j),osc.u);
