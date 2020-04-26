@@ -8,9 +8,9 @@ osc_min.A = zeros(size(osc.A));
 osc_min.G = ones(size(osc.G))*0.02; 
 osc_min.Om = zeros(size(osc.A));
 
-% osc_min.G(1) = osc.G(1)*0.5;
-% osc_min.Om(1) = osc.Om(1)*0.5;
-% osc_min.A(1) = 0.03;
+osc_min.G(1) = osc.G(1)*0.5;
+osc_min.Om(1) = osc.Om(1)*0.5;
+osc_min.A(1) = 0.05;
 % osc_min.A(5) = 0.01;
 % osc_min.A(7) = 0.01;
 
@@ -27,8 +27,8 @@ osc_max.A = ones(size(osc.A))*coef;
 osc_max.G = ones(size(osc.A))*100;
 osc_max.Om = ones(size(osc.A))*x_exp(end);
 
-% osc_max.G(1) = osc.G(1)*1.1;
-% osc_max.Om(1) = osc.Om(1)*1.2;
+osc_max.G(1) = osc.G(1)*1.2;
+osc_max.Om(1) = osc.Om(1)*1.2;
 
 lb = structToVec(osc_min);
 ub = structToVec(osc_max);
@@ -62,7 +62,6 @@ problem.ub = ub;
 x_res = fmincon(problem);
 
 an = vecToStruct(x_res);
-disp(an);
 
 %% Plotting
 
@@ -89,17 +88,18 @@ savefig(txt)
 %% Sum-rules
 
 an = scaling(an);
+disp(an);
 fit_result = an;
 an_au = convert2au(an);
-bsum = 1/(2*pi^2)*trapz(an_au.eloss,bsxfun(@times,an_au.eloss,eps_sum(an)));
-psum = 2/pi*trapz(an.eloss,bsxfun(@rdivide,eps_sum(an),an.eloss)) + 1/an.n_refrac^2;
+[eloss,elf] = mopt(an);
+
+bsum = 1/(2*pi^2)*trapz(eloss/h2ev,bsxfun(@times,eloss/h2ev,elf));
+psum = 2/pi*trapz(eloss/h2ev,bsxfun(@rdivide,elf,eloss/h2ev)) + 1/an.n_refrac^2;
+fsum = 1/(2*pi^2*(an.na*a0^3))*trapz(eloss/h2ev,bsxfun(@times,eloss/h2ev,elf));
 
 disp(['P-sum rule: ',num2str(psum)]);
 disp(['Bethe sum rule: ',num2str(bsum), ' electron density = ',num2str(osc.ne*a0^3), '(a.u.^-3)']);
 disp(['Sum of A: ',num2str(sum(an_au.A)),'(1-1/n2) = ', num2str(abs(1-(1/osc.n_refrac)^2)), ' 4piN = ',num2str(4*pi*osc.ne*a0^3), '(a.u.^-3)']);
-
-[eloss,elf] = mopt(an);
-fsum = 1/(2*pi^2*(an.na*a0^3))*trapz(eloss/h2ev,bsxfun(@times,eloss/h2ev,elf));
 disp(['F-sum rule:',num2str(fsum), ' EAN = ', num2str(osc.Z)]);
 
 %% Functions
