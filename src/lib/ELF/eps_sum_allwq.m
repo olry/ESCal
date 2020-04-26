@@ -83,10 +83,12 @@ elseif strcmp( osc.model,'Mermin')
     end
     eps = complex(1,0)./eps1;
     if strcmp(interface,'bulk')
-        ELF = imag(-1./eps);
+        eps_im = imag(-1./eps);
     elseif strcmp(interface,'surface')
-        ELF = imag(-1./(eps+1));
+        eps_im = imag(-1./(eps+1));
     end
+    eps_im(w<osc.egap,:) = 0;
+    ELF = eps_im;
 elseif strcmp( osc.model,'Mermin_LL')
     eps1 = zeros(size(q));
     for j=1:length(osc.A)

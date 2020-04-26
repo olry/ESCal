@@ -62,14 +62,16 @@ elseif strcmp( osc.model,'DrudeLorentz')
         eps_im(w>osc.egap,:) = eps_im(w>osc.egap,:) + osc.A(j)*epsDrud_im(w>osc.egap,:);
     end
     ELF = eps_im;
-elseif strcmp( osc.model,'Mermin')
+elseif strcmp(osc.model,'Mermin')
     eps1 = zeros(numel(w),numel(q));
     for j=1:length(osc.A)
         epsMerm = Mermin(q,w,osc.G(j),osc.Om(j));
         eps1 = eps1 + osc.A(j)*(complex(1,0)./epsMerm);
     end
     eps = complex(1,0)./eps1;
-    ELF = imag(-1./eps);
+    eps_im = imag(-1./eps);
+    eps_im(w<osc.egap,:) = 0;
+    ELF = eps_im;
 elseif strcmp( osc.model,'Mermin_LL')
     eps1 = zeros(numel(w),numel(q));
     for j=1:length(osc.A)

@@ -8,9 +8,27 @@ osc_min.A = zeros(size(osc.A));
 osc_min.G = ones(size(osc.G))*0.02; 
 osc_min.Om = zeros(size(osc.A));
 
-osc_max.A = ones(size(osc.A))*Inf;
+% osc_min.G(1) = osc.G(1)*0.5;
+% osc_min.Om(1) = osc.Om(1)*0.5;
+% osc_min.A(1) = 0.03;
+% osc_min.A(5) = 0.01;
+% osc_min.A(7) = 0.01;
+
+switch osc.model
+    case 'Drude'
+        coef = Inf;
+    case 'DrudeLindhard'
+        coef = 1;
+    case 'Mermin'
+        coef = 1;
+end
+       
+osc_max.A = ones(size(osc.A))*coef;
 osc_max.G = ones(size(osc.A))*100;
 osc_max.Om = ones(size(osc.A))*x_exp(end);
+
+% osc_max.G(1) = osc.G(1)*1.1;
+% osc_max.Om(1) = osc.Om(1)*1.2;
 
 lb = structToVec(osc_min);
 ub = structToVec(osc_max);
@@ -24,7 +42,7 @@ options.MaxFunctionEvaluations = 7000;
 options.StepTolerance = 1e-12;
 x_res = lsqcurvefit(@fit_func, structToVec(osc), x_exp, y_exp, lb, ub, options);
 %}
-%% Global
+%% Fmincon
 
 rng default % For reproducibility
 % %gs = GlobalSearch;
@@ -35,10 +53,10 @@ problem = createOptimProblem('fmincon',...
    optimoptions('fmincon','Algorithm','sqp','Display','iter','UseParallel',true));
 problem.lb = lb;
 problem.ub = ub;
-problem.options.MaxIterations = 1e5;
-problem.options.OptimalityTolerance = 1e-15;
-problem.options.StepTolerance = 1e-15;
-problem.options.MaxFunctionEvaluations = 1e5;
+% problem.options.MaxIterations = 1e5;
+% problem.options.OptimalityTolerance = 1e-15;
+% problem.options.StepTolerance = 1e-15;
+% problem.options.MaxFunctionEvaluations = 1e5;
 % % [x_res] = run(gs,problem);
 % 
 x_res = fmincon(problem);
@@ -72,7 +90,6 @@ savefig(txt)
 
 an = scaling(an);
 fit_result = an;
-an.eloss = [eps:0.01:E0]';
 an_au = convert2au(an);
 bsum = 1/(2*pi^2)*trapz(an_au.eloss,bsxfun(@times,an_au.eloss,eps_sum(an)));
 psum = 2/pi*trapz(an.eloss,bsxfun(@rdivide,eps_sum(an),an.eloss)) + 1/an.n_refrac^2;
@@ -81,7 +98,8 @@ disp(['P-sum rule: ',num2str(psum)]);
 disp(['Bethe sum rule: ',num2str(bsum), ' electron density = ',num2str(osc.ne*a0^3), '(a.u.^-3)']);
 disp(['Sum of A: ',num2str(sum(an_au.A)),'(1-1/n2) = ', num2str(abs(1-(1/osc.n_refrac)^2)), ' 4piN = ',num2str(4*pi*osc.ne*a0^3), '(a.u.^-3)']);
 
-fsum = 1/(2*pi^2*(osc.na*a0^3))*trapz(an_au.eloss,bsxfun(@times,an_au.eloss,eps_sum(an)));
+[eloss,elf] = mopt(an);
+fsum = 1/(2*pi^2*(an.na*a0^3))*trapz(eloss/h2ev,bsxfun(@times,eloss/h2ev,elf));
 disp(['F-sum rule:',num2str(fsum), ' EAN = ', num2str(osc.Z)]);
 
 %% Functions
