@@ -1,4 +1,4 @@
-function ELF = eps_sum_allwq(osc,interface)
+function ELF = eps_sum_allwq(osc,interface,E0)
 
 %%
 %{
@@ -27,6 +27,12 @@ function ELF = eps_sum_allwq(osc,interface)
 %}
 %%
 
+if nargin<3
+    E0 = [];
+end
+
+energy = osc.eloss;
+ind_energy = bsxfun(@le,energy,100);
 osc = convert2au(osc); %converts to atomic units
 
 w = osc.eloss;
@@ -44,7 +50,11 @@ if strcmp( osc.model,'Drude')
     end
     eps = complex(eps_re,eps_im);
     if strcmp(interface,'bulk')
-        ELF = imag(-1./eps);
+        elf_drude = imag(-1./eps);
+        [eloss,elf_henke] = mopt(osc,'/Users/olgaridzel/Research/Bruce/PHYSDAT/opt/xray/');
+        ind = (bsxfun(@le,eloss,E0) & bsxfun(@gt,eloss,100));
+        ELF = [elf_drude(ind_energy,:); repmat(elf_henke(ind)',1,length(elf_drude(1,:)))];
+        ELF = interp1([energy(ind_energy); eloss(ind)'],ELF,energy);
     elseif strcmp(interface,'surface')
         %ELF = eps_im./((eps_re+1).^2 + eps_im.^2);
         ELF = imag(-1./(eps+1));

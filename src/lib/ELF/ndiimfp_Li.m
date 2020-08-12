@@ -31,7 +31,7 @@ else
     %% Clear bulk
     x_in_b = zeros(size(osc.eloss));
     
-    ELF = eps_sum_allwq(osc,'bulk');
+    ELF = eps_sum_allwq(osc,'bulk',E0);
     ELF(isnan(ELF)) = 0;
 
     x_in_b(1) = 0;
@@ -75,7 +75,7 @@ else
     exdim = repmat(qvsintheta, 1, 1, 1, length(phi)); %add extra dimension over phi
     B = bsxfun(@times,exdim,reshape(cos(phi),1,1,1,[]));
     
-    w_wave = bsxfun(@minus,repmat((osc.eloss/h2ev)',1,2^(decdigs-1)+1,length(theta),length(phi)),B.*sind(alpha));
+    w_wave = bsxfun(@minus,repmat((osc.eloss'/h2ev)',1,2^(decdigs-1)+1,length(theta),length(phi)),B.*sind(alpha));
     Qv_per = Q.^2.*v_per^2;
     bottom = bsxfun(@plus,w_wave.^2,Qv_per);
               

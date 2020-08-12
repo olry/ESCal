@@ -127,7 +127,7 @@ end
 
 function y = fit_func(x,xdata)
     o = vecToStruct(x);
-    o = scaling(o);
+%     o = scaling(o);
     elf = eps_sum(o);
     elf(1) = eps;
     y = elf;
@@ -135,7 +135,7 @@ end
 
 function err = fit_func_2(x)
     o = vecToStruct(x);
-    o = scaling(o);
+%     o = scaling(o);
     elf = eps_sum(o);
     elf(1) = eps;
     weight = 1;

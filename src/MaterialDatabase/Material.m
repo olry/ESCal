@@ -15,7 +15,7 @@ classdef Material < CoreMaterial
 
     end
     
-    properties (Access = protected, Transient = true)
+    properties %(Access = protected, Transient = true)
         Data;
     end
     
@@ -127,9 +127,9 @@ classdef Material < CoreMaterial
                 return;
             end
             
-            if obj.IsManualDECS && ~obj.isManualDECSLegCoefs
-                error('Legendre expansion coefficients calculation for manually set DECS is not yet implemented');
-            end
+%             if obj.IsManualDECS && ~obj.isManualDECSLegCoefs
+%                 error('Legendre expansion coefficients calculation for manually set DECS is not yet implemented');
+%             end
             
             if obj.isManualDECSLegCoefs 
                 if size(obj.DECS_l,2) < NLeg+1
@@ -182,7 +182,7 @@ classdef Material < CoreMaterial
                 % decs_temp=interp1(DECSData.x,DECS_orig,x_temp,'spline');
 
                 decs_temp = interp2(DECSData.E0, DECSData.x, DECSData.y, E0_temp, theta_temp,'spline');
-                
+
                 % Calculate Legendres polynomial on that mashes
                 P = Legendre_mu(cos(theta_temp'),0,NLeg);
 %                 P_orig = Legendre_mu(cos(DECSData.x(:)'),0,NLeg);

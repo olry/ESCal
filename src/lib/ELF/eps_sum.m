@@ -1,4 +1,8 @@
-function ELF = eps_sum(osc)
+function ELF = eps_sum(osc, gapEffect, varargin)
+
+if nargin < 2
+    gapEffect = false;
+end
 
 %%
 %{
@@ -43,6 +47,14 @@ if strcmp( osc.model,'Drude')
     eps = complex(eps_re,eps_im);
     ELF = imag(-1./eps);
 elseif strcmp( osc.model,'DrudeLindhard')
+%     sumoneovereps = complex(1,0);    
+%     for j=1:length(osc.A)
+%         [epsDrud_re, epsDrud_im] = DrudeLindhard(q,w,osc.Om(j),osc.G(j),osc.alpha,osc.Ef);
+%         oneoverepsDL = complex(epsDrud_re, -epsDrud_im);
+%         sumoneovereps = sumoneovereps + osc.A(j) * (oneoverepsDL - complex(1, 0));
+%     end
+%     eps = complex(1, 0) ./ sumoneovereps;
+%     ELF = imag(-1./eps);
     
     eps_re = ones(numel(w),numel(q));
     eps_im = zeros(numel(w),numel(q));
@@ -70,7 +82,9 @@ elseif strcmp(osc.model,'Mermin')
     end
     eps = complex(1,0)./eps1;
     eps_im = imag(-1./eps);
-    eps_im(w<osc.egap,:) = 0;
+    if gapEffect
+        eps_im(w<osc.egap,:) = 0;
+    end
     ELF = eps_im;
 elseif strcmp( osc.model,'MerminLL')
     eps1 = zeros(numel(w),numel(q));
