@@ -51,7 +51,8 @@ if strcmp( osc.model,'Drude')
     eps = complex(eps_re,eps_im);
     if strcmp(interface,'bulk')
         elf_drude = imag(-1./eps);
-        [eloss,elf_henke] = mopt(osc,'/Users/olgaridzel/Research/Bruce/PHYSDAT/opt/xray/');
+%         [eloss,elf_henke] = mopt(osc,'/Users/olgaridzel/Research/Bruce/PHYSDAT/opt/xray/');
+        [eloss,elf_henke] = mopt(osc,'/home/lv70976/ridzel/gitrepos/PHYSDAT/opt/xray/');
         ind = (bsxfun(@le,eloss,E0) & bsxfun(@gt,eloss,100));
         ELF = [elf_drude(ind_energy,:); repmat(elf_henke(ind)',1,length(elf_drude(1,:)))];
         ELF = interp1([energy(ind_energy); eloss(ind)'],ELF,energy);

@@ -32,15 +32,17 @@ lb = structToVec(osc_min);
 ub = structToVec(osc_max);
 
 %% local minimum search
-%{
+% {
 options = optimoptions('lsqcurvefit','PlotFcn',@optimplotx,'Display','iter-detailed','UseParallel',true);
 % options.StepTolerance = 1e-12;
 % options.MaxFunctionEvaluations = 5000;
 [x_res] = lsqcurvefit(@fit_func, structToVec(osc),data.x_exp,data.y_exp,lb,ub,options);
+an = vecToStruct(x_res);
+an = scaling_ohne_henke(an);
 %}
 
 %% NLopt
-% {
+%{
 opt.algorithm = NLOPT_LN_COBYLA;
 opt.lower_bounds = lb;
 opt.upper_bounds = ub;
@@ -62,11 +64,9 @@ end
 opt.fc_tol = 1e-8; 
 opt.xtol_rel = 1e-10;
 [x_res] = nlopt_optimize(opt, structToVec(osc));
+an = vecToStruct(x_res);
 %}
 
-an = vecToStruct(x_res);
-% an = scaling_ohne_henke(an);
-% an = scaling_ohne_henke(an);
 disp(an);
 fit_result = an;
 
@@ -81,7 +81,7 @@ h = figure;
 
 plot(data.x_exp,data.y_exp,'DisplayName','Experiment','Marker','o','LineWidth',1)
 hold on
-plot(data.x_exp,fit_func(x_res),'DisplayName','Summary signal','LineWidth',2)
+plot(data.x_exp,fit_func(x_res,data.x_exp),'DisplayName','Summary signal','LineWidth',2)
 
 xlabel('Kinetic energy, eV')
 ylabel('Intensity, rel.un.')
@@ -142,7 +142,45 @@ function [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o)
     x_in_b = xb_new./trapz(data.mesh_eloss,xb_new); % diimfp
 end
 
-function [val, gradient] = fit_func(os)
+function y = fit_func(os,xdata)
+
+    o = vecToStruct(os);
+    o = scaling_ohne_henke(o);
+
+    %% x_in        
+    [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o);
+
+    %% spectrum bulk
+    data.Mat{1}.SetManualDIIMFP(flipud((data.E0-data.mesh_eloss)'),flipud(x_in_b'));
+    Rb = NSReflection(Layer(data.Mat{1}));
+    Rb.theta0 = data.theta0;
+    Rb.N_in = 15;
+    Rb.Calculate;
+    Rb.CalculateInelasticScatteringDistribution(data.theta,data.phi);
+    Cb = Rb.InelasticScatteringDistribution/Rb.InelasticScatteringDistribution(1);
+    convs_bulk = Rb.CalculateEnergyConvolutions;
+    signal_b = sum(convs_bulk*diag(Cb),2);
+
+    %% spectrum surface
+    data.Mat{2}.SetManualDIIMFP(flipud((data.E0-data.mesh_eloss)'),flipud(x_in_s'));
+    Rs = NSReflection(Layer(data.Mat{2}));
+    Rs.theta0 = data.theta0;
+    Rs.N_in = 15;
+    Rs.Calculate;
+    convs_surf = Rs.CalculateEnergyConvolutions;
+    Cs = poisspdf(0:Rs.N_in,int_over_depth_sigma_surf);
+    Cs = Cs/Cs(1);
+    signal_s = sum(convs_surf*diag(Cs),2);
+
+    %% gauss convolution               
+    bulk_gauss = conv_my(signal_b,data.Gauss_C,data.dE,'same');
+    res = conv_my(conv_my(signal_s,bulk_gauss,data.dE),signal_s,data.dE);
+    res = res/max(res) + data.Gauss_H'*data.int_H + data.Gauss_D'*data.int_D;
+    y = interp1(Rb.energy_mesh,res/max(res)*data.a1,xdata);  
+end
+
+
+function [val, gradient] = fit_func_nlopt(os)
     eval_num = eval_num + 1;
     o = vecToStruct(os);
 %         o = scaling_ohne_henke(o);
