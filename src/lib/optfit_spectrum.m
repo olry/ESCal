@@ -32,7 +32,7 @@ lb = structToVec(osc_min);
 ub = structToVec(osc_max);
 
 %% local minimum search
-%{
+% {
 options = optimoptions('lsqcurvefit','PlotFcn',@optimplotx,'Display','iter-detailed','UseParallel',true);
 % options.StepTolerance = 1e-12;
 % options.MaxFunctionEvaluations = 5000;
@@ -42,7 +42,7 @@ an = scaling_ohne_henke(an);
 %}
 
 %% NLopt
-% {
+%{
 opt.algorithm = NLOPT_LN_COBYLA;
 opt.lower_bounds = lb;
 opt.upper_bounds = ub;
@@ -157,7 +157,8 @@ function y = fit_func(os,xdata)
     Rb.N_in = 15;
     Rb.Calculate;
     Rb.CalculateInelasticScatteringDistribution(data.theta,data.phi);
-    Cb = Rb.InelasticScatteringDistribution/Rb.InelasticScatteringDistribution(1);
+    Cb = Rb.InelasticScatteringDistribution;
+%     Cb = Rb.InelasticScatteringDistribution/Rb.InelasticScatteringDistribution(1);
     convs_bulk = Rb.CalculateEnergyConvolutions;
     signal_b = sum(convs_bulk*diag(Cb),2);
 
@@ -169,7 +170,7 @@ function y = fit_func(os,xdata)
     Rs.Calculate;
     convs_surf = Rs.CalculateEnergyConvolutions;
     Cs = poisspdf(0:Rs.N_in,int_over_depth_sigma_surf);
-    Cs = Cs/Cs(1);
+%     Cs = Cs/Cs(1);
     signal_s = sum(convs_surf*diag(Cs),2);
 
     %% gauss convolution   
