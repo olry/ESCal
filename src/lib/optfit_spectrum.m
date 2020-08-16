@@ -32,7 +32,7 @@ lb = structToVec(osc_min);
 ub = structToVec(osc_max);
 
 %% local minimum search
-% {
+%{
 options = optimoptions('lsqcurvefit','PlotFcn',@optimplotx,'Display','iter-detailed','UseParallel',true);
 % options.StepTolerance = 1e-12;
 % options.MaxFunctionEvaluations = 5000;
@@ -42,12 +42,12 @@ an = scaling_ohne_henke(an);
 %}
 
 %% NLopt
-%{
+% {
 opt.algorithm = NLOPT_LN_COBYLA;
 opt.lower_bounds = lb;
 opt.upper_bounds = ub;
 opt.maxeval = 200;
-opt.min_objective = @fit_func;
+opt.min_objective = @fit_func_nlopt;
 if osc.henke
     if strcmp(osc.model,'Drude')
        opt.fc = { (@(x) aconstraint_henke(x)) };
@@ -81,7 +81,7 @@ h = figure;
 
 plot(data.x_exp,data.y_exp,'DisplayName','Experiment','Marker','o','LineWidth',1)
 hold on
-plot(data.x_exp,fit_func(x_res,data.x_exp),'DisplayName','Summary signal','LineWidth',2)
+plot(data.x_exp,fit_func_nlopt(x_res),'DisplayName','Summary signal','LineWidth',2)
 
 xlabel('Kinetic energy, eV')
 ylabel('Intensity, rel.un.')
@@ -101,7 +101,7 @@ savefig(txt)
 %% Sum-rules
 
 an_au = convert2au(an);
-[eloss,elf] = mopt(an,xraypath);
+[eloss,elf] = mopt(an,xraypath,true);
 
 bsum = 1/(2*pi^2)*trapz(eloss/h2ev,bsxfun(@times,eloss/h2ev,elf));
 psum = 2/pi*trapz(eloss(2:end),bsxfun(@rdivide,elf(2:end),eloss(2:end))) + 1/an.n_refrac^2;
@@ -172,11 +172,14 @@ function y = fit_func(os,xdata)
     Cs = Cs/Cs(1);
     signal_s = sum(convs_surf*diag(Cs),2);
 
-    %% gauss convolution               
-    bulk_gauss = conv_my(signal_b,data.Gauss_C,data.dE,'same');
-    res = conv_my(conv_my(signal_s,bulk_gauss,data.dE),signal_s,data.dE);
-    res = res/max(res) + data.Gauss_H'*data.int_H + data.Gauss_D'*data.int_D;
-    y = interp1(Rb.energy_mesh,res/max(res)*data.a1,xdata);  
+    %% gauss convolution   
+    signal_bs = conv_my(signal_b,signal_s,data.dE);
+    signal_sbs = conv_my(signal_s,signal_bs,data.dE);
+    signal_sbs = signal_sbs/max(signal_sbs);
+    signal_sbs_full = [signal_sbs; zeros(length(data.E0+data.dE:data.dE:data.E0+10*data.sigma_C),1)];
+    signal_sbs_gauss = conv_my(signal_sbs_full,data.Gauss_C,data.dE,'same')/data.dE;
+    res = signal_sbs_gauss + data.Gauss_H'*data.int_H + data.Gauss_D'*data.int_D;
+    y = interp1(data.final_mesh,res*data.exp_area,data.x_exp);  
 end
 
 
@@ -195,7 +198,8 @@ function [val, gradient] = fit_func_nlopt(os)
     Rb.N_in = 15;
     Rb.Calculate;
     Rb.CalculateInelasticScatteringDistribution(data.theta,data.phi);
-    Cb = Rb.InelasticScatteringDistribution/Rb.InelasticScatteringDistribution(1);
+    Cb = Rb.InelasticScatteringDistribution;
+%     Cb = Rb.InelasticScatteringDistribution/Rb.InelasticScatteringDistribution(1);
     convs_bulk = Rb.CalculateEnergyConvolutions;
     signal_b = sum(convs_bulk*diag(Cb),2);
 
@@ -207,14 +211,17 @@ function [val, gradient] = fit_func_nlopt(os)
     Rs.Calculate;
     convs_surf = Rs.CalculateEnergyConvolutions;
     Cs = poisspdf(0:Rs.N_in,int_over_depth_sigma_surf);
-    Cs = Cs/Cs(1);
+%     Cs = Cs/Cs(1);
     signal_s = sum(convs_surf*diag(Cs),2);
 
-    %% gauss convolution               
-    bulk_gauss = conv_my(signal_b,data.Gauss_C,data.dE,'same');
-    res = conv_my(conv_my(signal_s,bulk_gauss,data.dE),signal_s,data.dE);
-    res = res/max(res) + data.Gauss_H'*data.int_H + data.Gauss_D'*data.int_D;
-    y = interp1(Rb.energy_mesh,res/max(res)*data.a1,data.x_exp);  
+    %% gauss convolution   
+    signal_bs = conv_my(signal_b,signal_s,data.dE);
+    signal_sbs = conv_my(signal_s,signal_bs,data.dE);
+    signal_sbs = signal_sbs/max(signal_sbs);
+    signal_sbs_full = [signal_sbs; zeros(length(data.E0+data.dE:data.dE:data.E0+10*data.sigma_C),1)];
+    signal_sbs_gauss = conv_my(signal_sbs_full,data.Gauss_C,data.dE,'same')/data.dE;
+    res = signal_sbs_gauss + data.Gauss_H'*data.int_H + data.Gauss_D'*data.int_D;
+    y = interp1(data.final_mesh,res*data.exp_area,data.x_exp);   
     val = sum((data.y_exp - y).^2);
     if mod(eval_num,1) == 0
         disp(['Number of function evaluations:', num2str(eval_num), ' chisq:', num2str(val)]);
@@ -227,8 +234,15 @@ end
 function [val, gradient] = aconstraint(x)
     o = vecToStruct(x);
     o_au = convert2au(o);
+    
     if strcmp(o.model,'Drude')
-        cf = o.ne * wpc / sum(o_au.A);
+        [eloss,elf_henke] = mopt(o,'/Users/olgaridzel/Research/Bruce/PHYSDAT/opt/xray/');
+        ind = bsxfun(@gt,eloss,100);
+        bsum_henke = 1/(2*pi^2)*trapz(eloss(ind)/h2ev,bsxfun(@times,eloss(ind)/h2ev,elf_henke(ind)));
+        cf = 4*pi*(o.ne*a0^3 - bsum_henke) / sum(o_au.A);
+%         else
+%             cf = o.ne * wpc / sum(o_au.A);
+%         end        
     elseif strcmp(o.model,'DrudeLindhard')
         cf = (1-1/o.n_refrac^2) / sum(o_au.A);
     else

@@ -18,7 +18,7 @@ function [fitresult, gof, E0] = gaussFit(x, y)
 [xData, yData] = prepareCurveData( x, y );
 indE0 = find(y==max(y));
 E0 = x(indE0);
-limX = round(0.9*indE0);
+limX = round(0.98*indE0);
 
 % Set up fittype and options.
 ft = fittype( 'gauss1' );
