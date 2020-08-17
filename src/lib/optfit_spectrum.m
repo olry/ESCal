@@ -38,7 +38,7 @@ options = optimoptions('lsqcurvefit','PlotFcn',@optimplotx,'Display','iter-detai
 % options.MaxFunctionEvaluations = 5000;
 [x_res] = lsqcurvefit(@fit_func, structToVec(osc),data.x_exp,data.y_exp,lb,ub,options);
 an = vecToStruct(x_res);
-an = scaling_ohne_henke(an);
+an = scaling(an,xraypath);
 %}
 
 %% NLopt
@@ -81,14 +81,14 @@ h = figure;
 
 plot(data.x_exp,data.y_exp,'DisplayName','Experiment','Marker','o','LineWidth',1)
 hold on
-plot(data.x_exp,fit_func_nlopt(x_res),'DisplayName','Summary signal','LineWidth',2)
+plot(data.x_exp,fit_func(x_res,data.x_exp),'DisplayName','Summary signal','LineWidth',2)
 
 xlabel('Kinetic energy, eV')
 ylabel('Intensity, rel.un.')
 set(findall(gcf,'-property','FontSize'),'FontSize',25)
 
 ylim([0 0.05])
-xlim([-3 40])
+% xlim([-3 40])
 
 set(h,'Units','Inches');
 pos = get(h,'Position');
@@ -127,7 +127,7 @@ function s = vecToStruct(v)
 end
 
 function [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o)
-    [diimfp,dsep,sigma] = ndiimfp_Li(o,data.E0,data.depth,data.theta,8);
+    [diimfp,dsep,sigma] = ndiimfp_Li(o,data.E0,data.depth,data.theta,8,xraypath);
     r = data.depth./cosd(data.theta);
 
     int_over_depth_dsep = trapz(r,dsep,2);
@@ -145,7 +145,7 @@ end
 function y = fit_func(os,xdata)
 
     o = vecToStruct(os);
-    o = scaling_ohne_henke(o);
+    o = scaling(o,xraypath);
 
     %% x_in        
     [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o);
@@ -180,14 +180,13 @@ function y = fit_func(os,xdata)
     signal_sbs_full = [signal_sbs; zeros(length(data.E0+data.dE:data.dE:data.E0+10*data.sigma_C),1)];
     signal_sbs_gauss = conv_my(signal_sbs_full,data.Gauss_C,data.dE,'same')/data.dE;
     res = signal_sbs_gauss + data.Gauss_H'*data.int_H + data.Gauss_D'*data.int_D;
-    y = interp1(data.final_mesh,res*data.exp_area,data.x_exp);  
+    y = interp1(data.final_mesh,res*data.exp_area,xdata);  
 end
 
 
 function [val, gradient] = fit_func_nlopt(os)
     eval_num = eval_num + 1;
     o = vecToStruct(os);
-%         o = scaling_ohne_henke(o);
 
     %% x_in        
     [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o);

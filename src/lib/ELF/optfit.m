@@ -8,12 +8,6 @@ osc_min.A = zeros(size(osc.A));
 osc_min.G = ones(size(osc.G))*0.02; 
 osc_min.Om = zeros(size(osc.A));
 
-% osc_min.G(1) = osc.G(1)*0.5;
-% osc_min.Om(1) = osc.Om(1)*0.5;
-% osc_min.A(1) = 0.05;
-% osc_min.A(5) = 0.01;
-% osc_min.A(7) = 0.01;
-
 switch osc.model
     case 'Drude'
         coef = Inf;
@@ -30,9 +24,6 @@ end
 osc_max.A = ones(size(osc.A))*coef;
 osc_max.G = ones(size(osc.A))*100;
 osc_max.Om = ones(size(osc.A))*x_exp(end);
-
-% osc_max.G(1) = osc.G(1)*1.2;
-% osc_max.Om(1) = osc.Om(1)*1.2;
 
 lb = structToVec(osc_min);
 ub = structToVec(osc_max);

@@ -1,4 +1,4 @@
-function [diimfp,dsep,siimfp] = ndiimfp_Li(osc,E0,depth,alpha,decdigs,varargin)
+function [diimfp,dsep,siimfp] = ndiimfp_Li(osc,E0,depth,alpha,decdigs,xraypath,varargin)
 
 %%
 %{
@@ -31,7 +31,7 @@ else
     %% Clear bulk
     x_in_b = zeros(size(osc.eloss));
     
-    ELF = eps_sum_allwq(osc,'bulk',E0);
+    ELF = eps_sum_allwq(osc,'bulk',false,xraypath);
     ELF(isnan(ELF)) = 0;
 
     x_in_b(1) = 0;

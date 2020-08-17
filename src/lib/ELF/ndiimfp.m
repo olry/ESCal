@@ -1,10 +1,14 @@
-function diimfp = ndiimfp(osc,E0,decdigs,norm,varargin)
+function diimfp = ndiimfp(osc,E0,decdigs,norm,gapEffect,xraypath,varargin)
 %%
 %{
    Calculates the normalised DIIMFP
    for a given energy.
 %}
+
+if nargin<6, xraypath = ''; end
+if nargin<5, gapEffect = false; end
 if nargin<4, norm = true; end
+
 if nargin<3, decdigs = 10; end
 if nargin<2
     warning ('Error in input format')
@@ -37,7 +41,7 @@ else
 %     ELF = eps_sum_allwq(osc,'bulk');
 %     res = ELF./q;
 %     res(isnan(res))=0;
-    res = eps_sum_allwq(osc,'bulk');
+    res = eps_sum_allwq(osc,'bulk',gapEffect,xraypath);
     
     x_in(1) = 0.0;
     for i=2:length(osc.eloss)

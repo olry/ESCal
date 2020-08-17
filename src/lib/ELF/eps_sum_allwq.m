@@ -1,4 +1,11 @@
-function ELF = eps_sum_allwq(osc,interface,E0)
+function ELF = eps_sum_allwq(osc,interface,gapEffect,xraypath,varargin)
+
+if nargin < 4
+    xraypath = '';
+end
+if nargin < 3
+    gapEffect = false;
+end
 
 %%
 %{
@@ -27,10 +34,6 @@ function ELF = eps_sum_allwq(osc,interface,E0)
 %}
 %%
 
-if nargin<3
-    E0 = [];
-end
-
 energy = osc.eloss;
 ind_energy = bsxfun(@le,energy,100);
 osc = convert2au(osc); %converts to atomic units
@@ -50,18 +53,28 @@ if strcmp( osc.model,'Drude')
     end
     eps = complex(eps_re,eps_im);
     if strcmp(interface,'bulk')
-        elf_drude = imag(-1./eps);
-        [eloss,elf_henke] = mopt(osc,'/Users/olgaridzel/Research/Bruce/PHYSDAT/opt/xray/');
-%         [eloss,elf_henke] = mopt(osc,'/home/lv70976/ridzel/gitrepos/PHYSDAT/opt/xray/');
-        ind = (bsxfun(@le,eloss,E0) & bsxfun(@gt,eloss,100));
-        ELF = [elf_drude(ind_energy,:); repmat(elf_henke(ind)',1,length(elf_drude(1,:)))];
-        ELF = interp1([energy(ind_energy); eloss(ind)'],ELF,energy);
+        if xraypath
+            ELF = get_henke_data(imag(-1./eps));     
+        else
+            ELF = imag(-1./eps);
+        end
     elseif strcmp(interface,'surface')
         %ELF = eps_im./((eps_re+1).^2 + eps_im.^2);
         ELF = imag(-1./(eps+1));
     end
 elseif strcmp( osc.model,'DrudeLindhard')
-    
+%     sumoneovereps = complex(1,0);   
+%     for j=1:length(osc.A)
+%         [epsDrud_re, epsDrud_im] = DrudeLindhard(q,w,osc.Om(j),osc.G(j),osc.alpha,osc.Ef);
+%         oneoverepsDL = complex(epsDrud_re, -epsDrud_im);
+%         sumoneovereps = sumoneovereps + osc.A(j) * (oneoverepsDL - complex(1, 0));
+%     end
+%     eps = complex(1, 0) ./ sumoneovereps;
+%     ELF = imag(-1./eps);
+%     if gapEffect
+%         ELF(w<osc.egap,:) = 0;
+%     end
+  
     eps_re = zeros(size(q));
     eps_im = zeros(size(q));
     for j=1:length(osc.A)
@@ -71,21 +84,14 @@ elseif strcmp( osc.model,'DrudeLindhard')
         eps_im(ind,:) = eps_im(ind,:) + osc.A(j)*epsDrud_im(ind,:);
     end
     if strcmp(interface,'bulk')
-        ELF = eps_im;
+        if xraypath
+            ELF = get_henke_data(eps_im);
+        else
+            ELF = eps_im;
+        end
     elseif strcmp(interface,'surface')
         error('The DrudeLindhard model cannot be used for surface calculations');
     end
-elseif strcmp( osc.model,'DrudeLorentz')
-    
-    eps_re = zeros(size(q));
-    eps_im = zeros(size(q));
-    for j=1:length(osc.A)
-        [epsDrud_re, epsDrud_im] = DrudeLorentz(q,w,osc.Om(j),osc.G(j),osc.alpha_g(j),osc.beta_g(j),osc.alpha,osc.Ef);
-        eps_re = eps_re + osc.A(j)*epsDrud_re;
-        ind = bsxfun(@gt,w,osc.egap);
-        eps_im(ind,:) = eps_im(ind,:) + osc.A(j)*epsDrud_im(ind,:);
-    end
-    ELF = eps_im;
 elseif strcmp( osc.model,'Mermin')
     eps1 = zeros(size(q));
     for j=1:length(osc.A)
@@ -94,12 +100,17 @@ elseif strcmp( osc.model,'Mermin')
     end
     eps = complex(1,0)./eps1;
     if strcmp(interface,'bulk')
-        eps_im = imag(-1./eps);
+        if xraypath
+            ELF = get_henke_data(imag(-1./eps));           
+        else
+            ELF = imag(-1./eps);
+        end
     elseif strcmp(interface,'surface')
-        eps_im = imag(-1./(eps+1));
+        ELF = imag(-1./(eps+1));
     end
-    eps_im(w<osc.egap,:) = 0;
-    ELF = eps_im;
+    if gapEffect
+        ELF(w<osc.egap,:) = 0;
+    end
 elseif strcmp( osc.model,'MerminLL')
     eps1 = zeros(size(q));
     for j=1:length(osc.A)
@@ -107,9 +118,20 @@ elseif strcmp( osc.model,'MerminLL')
         eps1 = eps1 + osc.A(j)*(complex(1,0)./epsMerm);
     end
     eps = complex(1,0)./eps1;
-    ELF = imag(-1./eps);
+    if xraypath
+        ELF = get_henke_data(imag(-1./eps));           
+    else
+        ELF = imag(-1./eps);
+    end
 else
     error('Choose the correct model name: Drude,DrudeLindhard,Mermin,MerminLL');
     
 end
+
+    function ELF = get_henke_data(elf_model)
+        [eloss,elf_henke] = mopt(osc,xraypath);
+        ind = bsxfun(@gt,eloss,100);
+        ELF = [elf_model(ind_energy,:); repmat(elf_henke(ind)',1,length(elf_model(1,:)))];
+        ELF = interp1([energy(ind_energy); eloss(ind)'],ELF,energy);
+    end
 end

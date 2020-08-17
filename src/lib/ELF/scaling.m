@@ -1,8 +1,8 @@
-function osc_scaled = scaling(osc)
+function osc_scaled = scaling(osc,xraypath)
 
     o = convert2au(osc);
 
-    [eloss,elf_henke] = mopt(osc,'/Users/olgaridzel/Research/Bruce/PHYSDAT/opt/xray/');
+    [eloss,elf_henke] = mopt(osc,xraypath,false);
     ind = bsxfun(@gt,eloss,100);
     bsum_henke = 1/(2*pi^2)*trapz(eloss(ind)/h2ev,bsxfun(@times,eloss(ind)/h2ev,elf_henke(ind)));
     
@@ -51,11 +51,6 @@ function osc_scaled = scaling(osc)
 %             end
             
     end
-%     [eloss_,elf_] = mopt(o,'/Users/olgaridzel/Research/Bruce/PHYSDAT/opt/xray/');
-%     bsum = 1/(2*pi^2)*trapz(eloss_/h2ev,bsxfun(@times,eloss_/h2ev,elf_'));
-%     fsum = 1/(2*pi^2*(o.na*a0^3))*trapz(eloss_/h2ev,bsxfun(@times,eloss_/h2ev,elf_'));
-%     disp(['Bethe sum rule: ',num2str(bsum), ' electron density = ',num2str(o.ne*a0^3), '(a.u.^-3)']);
-%     disp(['F-sum rule:',num2str(fsum), ' EAN = ', num2str(o.Z)]);
     osc_scaled = convert2ru(o);
 
 
