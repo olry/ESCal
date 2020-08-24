@@ -26,7 +26,7 @@ switch osc.model
 end
        
 osc_max.A = ones(size(osc.A))*coef;
-osc_max.Om = ones(size(osc.Om))*100;
+osc_max.Om = ones(size(osc.Om))*((data.E0-data.x_exp(1))/h2ev);
 
 lb = structToVec(osc_min);
 ub = structToVec(osc_max);
@@ -46,7 +46,7 @@ an = scaling(an,xraypath);
 opt.algorithm = NLOPT_LN_COBYLA;
 opt.lower_bounds = lb;
 opt.upper_bounds = ub;
-opt.maxeval = 200;
+opt.maxeval = 50;
 opt.min_objective = @fit_func_nlopt;
 if osc.henke
     if strcmp(osc.model,'Drude')
@@ -72,31 +72,32 @@ fit_result = an;
 
 %% Plotting
 
-h = figure;
 % plot(data.E0 - data.x_exp,data.y_exp,'DisplayName','Experiment','Marker','o','LineWidth',1)
 % hold on
 % plot(data.E0 - data.mesh_eloss,data.Gauss_H*data.int_H,'DisplayName','H signal','LineWidth',2)
 % plot(data.E0 - data.mesh_eloss,data.Gauss_D*data.int_D,'DisplayName','D signal','LineWidth',2)
 % plot(data.E0 - data.x_exp,fit_func(x_res,data.x_exp),'DisplayName','Summary signal','LineWidth',2)
 
+figure;
 plot(data.x_exp,data.y_exp,'DisplayName','Experiment','Marker','o','LineWidth',1)
 hold on
-plot(data.x_exp,fit_func(x_res,data.x_exp),'DisplayName','Summary signal','LineWidth',2)
+plot(data.x_exp,fit_func(x_res,data.x_exp),'DisplayName',['Summary signal, H = ',num2str(data.int_H),', D = ',num2str(data.int_D)],'LineWidth',2)
+legend
 
 xlabel('Kinetic energy, eV')
 ylabel('Intensity, rel.un.')
 set(findall(gcf,'-property','FontSize'),'FontSize',25)
 
-ylim([0 0.05])
+% ylim([0 0.05])
 % xlim([-3 40])
 
-set(h,'Units','Inches');
-pos = get(h,'Position');
-set(h,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
-txt = 'chsurfs';
-print(h,txt,'-dpdf','-r0')
-txt = 'chsurfs.fig';
-savefig(txt)
+% set(h,'Units','Inches');
+% pos = get(h,'Position');
+% set(h,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
+% txt = 'chsurfs';
+% print(h,txt,'-dpdf','-r0')
+% txt = 'chsurfs.fig';
+% savefig(txt)
 
 %% Sum-rules
 
