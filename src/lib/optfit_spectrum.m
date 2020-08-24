@@ -26,13 +26,13 @@ switch osc.model
 end
        
 osc_max.A = ones(size(osc.A))*coef;
-osc_max.Om = ones(size(osc.Om))*((data.E0-data.x_exp(1))/h2ev);
+osc_max.Om = ones(size(osc.Om))*(data.E0-data.x_exp(1));
 
 lb = structToVec(osc_min);
 ub = structToVec(osc_max);
 
 %% local minimum search
-% {
+%{
 options = optimoptions('lsqcurvefit','PlotFcn',@optimplotx,'Display','iter-detailed','UseParallel',true);
 % options.StepTolerance = 1e-12;
 % options.MaxFunctionEvaluations = 5000;
@@ -64,6 +64,25 @@ end
 opt.fc_tol = 1e-8; 
 opt.xtol_rel = 1e-10;
 [x_res] = nlopt_optimize(opt, structToVec(osc));
+an = vecToStruct(x_res);
+%}
+
+%% fmincon
+% {
+rng default % For reproducibility
+
+problem = createOptimProblem('fmincon',...
+'objective',@fit_func_fmincon,...
+'x0',structToVec(osc),'options',...
+optimoptions('fmincon','Algorithm','sqp','Display','iter','UseParallel',true));
+problem.lb = lb;
+problem.ub = ub;
+problem.nonlcon = @aconstraint;
+%     problem.options.MaxIterations = 1e6;
+%     problem.options.OptimalityTolerance = 1e-15;
+%     problem.options.StepTolerance = 1e-15;
+%     problem.options.MaxFunctionEvaluations = 1e6;
+x_res = fmincon(problem);
 an = vecToStruct(x_res);
 %}
 
@@ -237,7 +256,7 @@ function [val, gradient] = aconstraint(x)
     o_au = convert2au(o);
     
     if strcmp(o.model,'Drude')
-        [eloss,elf_henke] = mopt(o,'/Users/olgaridzel/Research/Bruce/PHYSDAT/opt/xray/');
+        [eloss,elf_henke] = mopt(o,xraypath);
         ind = bsxfun(@gt,eloss,100);
         bsum_henke = 1/(2*pi^2)*trapz(eloss(ind)/h2ev,bsxfun(@times,eloss(ind)/h2ev,elf_henke(ind)));
         cf = 4*pi*(o.ne*a0^3 - bsum_henke) / sum(o_au.A);
@@ -250,12 +269,53 @@ function [val, gradient] = aconstraint(x)
         cf = 1 / sum(o_au.A);
     end
 	val = abs(cf-1);
-    if mod(eval_num,100) == 0
-        disp(['A factor:', num2str(val)]);
-    end
+%     if mod(eval_num,100) == 0
+%         disp(['A factor:', num2str(val)]);
+%     end
     if (nargout > 1)
         gradient = [0, 0.5 / val];
     end   
+end
+
+function val = fit_func_fmincon(os)
+
+    o = vecToStruct(os);
+
+    %% x_in        
+    [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o);
+
+    %% spectrum bulk
+    data.Mat{1}.SetManualDIIMFP(flipud((data.E0-data.mesh_eloss)'),flipud(x_in_b'));
+    Rb = NSReflection(Layer(data.Mat{1}));
+    Rb.theta0 = data.theta0;
+    Rb.N_in = 15;
+    Rb.Calculate;
+    Rb.CalculateInelasticScatteringDistribution(data.theta,data.phi);
+    Cb = Rb.InelasticScatteringDistribution;
+%     Cb = Rb.InelasticScatteringDistribution/Rb.InelasticScatteringDistribution(1);
+    convs_bulk = Rb.CalculateEnergyConvolutions;
+    signal_b = sum(convs_bulk*diag(Cb),2);
+
+    %% spectrum surface
+    data.Mat{2}.SetManualDIIMFP(flipud((data.E0-data.mesh_eloss)'),flipud(x_in_s'));
+    Rs = NSReflection(Layer(data.Mat{2}));
+    Rs.theta0 = data.theta0;
+    Rs.N_in = 15;
+    Rs.Calculate;
+    convs_surf = Rs.CalculateEnergyConvolutions;
+    Cs = poisspdf(0:Rs.N_in,int_over_depth_sigma_surf);
+%     Cs = Cs/Cs(1);
+    signal_s = sum(convs_surf*diag(Cs),2);
+
+    %% gauss convolution   
+    signal_bs = conv_my(signal_b,signal_s,data.dE);
+    signal_sbs = conv_my(signal_s,signal_bs,data.dE);
+    signal_sbs = signal_sbs/max(signal_sbs);
+    signal_sbs_full = [signal_sbs; zeros(length(data.E0+data.dE:data.dE:data.E0+10*data.sigma_C),1)];
+    signal_sbs_gauss = conv_my(signal_sbs_full,data.Gauss_C,data.dE,'same')/data.dE;
+    res = signal_sbs_gauss + data.Gauss_H'*data.int_H + data.Gauss_D'*data.int_D;
+    y = interp1(data.final_mesh,res*data.exp_area,data.x_exp);   
+    val = sum((data.y_exp - y).^2);
 end
 
 end
