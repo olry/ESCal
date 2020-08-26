@@ -26,7 +26,7 @@ switch osc.model
 end
        
 osc_max.A = ones(size(osc.A))*coef;
-osc_max.Om = ones(size(osc.Om))*(data.E0-data.x_exp(1));
+osc_max.Om = ones(size(osc.Om))*100;
 
 lb = structToVec(osc_min);
 ub = structToVec(osc_max);
@@ -42,11 +42,11 @@ an = scaling(an,xraypath);
 %}
 
 %% NLopt
-%{
+% {
 opt.algorithm = NLOPT_LN_COBYLA;
 opt.lower_bounds = lb;
 opt.upper_bounds = ub;
-opt.maxeval = 50;
+opt.maxeval = 500;
 opt.min_objective = @fit_func_nlopt;
 if osc.henke
     if strcmp(osc.model,'Drude')
@@ -68,7 +68,7 @@ an = vecToStruct(x_res);
 %}
 
 %% fmincon
-% {
+%{
 rng default % For reproducibility
 
 problem = createOptimProblem('fmincon',...
@@ -98,9 +98,9 @@ fit_result = an;
 % plot(data.E0 - data.x_exp,fit_func(x_res,data.x_exp),'DisplayName','Summary signal','LineWidth',2)
 
 figure;
-plot(data.x_exp,data.y_exp,'DisplayName','Experiment','Marker','o','LineWidth',1)
+plot(data.E0 - data.x_exp,data.y_exp,'DisplayName','Experiment','Marker','o','LineWidth',1)
 hold on
-plot(data.x_exp,fit_func(x_res,data.x_exp),'DisplayName',['Summary signal, H = ',num2str(data.int_H),', D = ',num2str(data.int_D)],'LineWidth',2)
+plot(data.E0 - data.x_exp,fit_func(x_res,data.x_exp),'DisplayName',['Summary signal, H = ',num2str(data.int_H),', D = ',num2str(data.int_D)],'LineWidth',2)
 legend
 
 xlabel('Kinetic energy, eV')
