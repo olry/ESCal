@@ -31,7 +31,7 @@ else
     %% Clear bulk
     x_in_b = zeros(size(osc.eloss));
     
-    ELF = eps_sum_allwq(osc,'bulk',false,xraypath);
+    ELF = eps_sum_allwq(osc,'bulk',false);
     ELF(isnan(ELF)) = 0;
 
     x_in_b(1) = 0;
@@ -81,7 +81,7 @@ else
               
     for i = 1:length(theta)
         osc.qtran = Q(:,:,i)/a0;
-        Im(:,:,i) = eps_sum_allwq(osc,'surface');
+        Im(:,:,i) = eps_sum_allwq(osc,'surface',false);
     end
     
     for dep = 1:length(r)

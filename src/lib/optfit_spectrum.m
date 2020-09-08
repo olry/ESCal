@@ -6,6 +6,7 @@ eval_num = 0;
 osc_min.A = ones(size(osc.A))*1e-10;
 osc_min.G = ones(size(osc.G))*0.25/h2ev; 
 osc_min.Om = ones(size(osc.Om))*osc.egap;
+osc_min.H = eps;
 
 switch osc.model
     case 'Drude'
@@ -27,6 +28,7 @@ end
        
 osc_max.A = ones(size(osc.A))*coef;
 osc_max.Om = ones(size(osc.Om))*100;
+osc_max.H = 0.2;
 
 lb = structToVec(osc_min);
 ub = structToVec(osc_max);
@@ -46,21 +48,9 @@ an = scaling(an,xraypath);
 opt.algorithm = NLOPT_LN_COBYLA;
 opt.lower_bounds = lb;
 opt.upper_bounds = ub;
-opt.maxeval = 500;
+opt.maxeval = 2000;
 opt.min_objective = @fit_func_nlopt;
-if osc.henke
-    if strcmp(osc.model,'Drude')
-       opt.fc = { (@(x) aconstraint_henke(x)) };
-    else
-        opt.fc = { (@(x) wconstraint_henke(x)); };
-    end
-else
-    if strcmp(osc.model,'Drude')
-       opt.fc = { (@(x) aconstraint(x)) };
-    else
-        opt.fc = { (@(x) wconstraint(x)) };
-    end
-end
+opt.fc = { (@(x) aconstraint(x)) };
 opt.fc_tol = 1e-8; 
 opt.xtol_rel = 1e-10;
 [x_res] = nlopt_optimize(opt, structToVec(osc));
@@ -134,7 +124,7 @@ disp(['F-sum rule:',num2str(fsum), ' EAN = ', num2str(osc.Z)]);
 
 %%
 function v = structToVec(s)
-    v = [s.A, s.G, s.Om];
+    v = [s.A, s.G, s.Om, s.H];
 end
 
 function s = vecToStruct(v)
@@ -144,6 +134,7 @@ function s = vecToStruct(v)
     s.A = v(1:nA);
     s.G = v((1:nA)+nA);
     s.Om = v((1:nA)+nA*2);
+    s.H = v(end);
 end
 
 function [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o)
@@ -195,11 +186,11 @@ function y = fit_func(os,xdata)
 
     %% gauss convolution   
     signal_bs = conv_my(signal_b,signal_s,data.dE);
-    signal_sbs = conv_my(signal_s,signal_bs,data.dE);
-    signal_sbs = signal_sbs/max(signal_sbs);
+%     signal_sbs = conv_my(signal_s,signal_bs,data.dE);
+    signal_sbs = signal_bs/max(signal_bs);
     signal_sbs_full = [signal_sbs; zeros(length(data.E0+data.dE:data.dE:data.E0+10*data.sigma_C),1)];
     signal_sbs_gauss = conv_my(signal_sbs_full,data.Gauss_C,data.dE,'same')/data.dE;
-    res = signal_sbs_gauss + data.Gauss_H'*data.int_H + data.Gauss_D'*data.int_D;
+    res = signal_sbs_gauss + data.Gauss_H'*o.H;
     y = interp1(data.final_mesh,res*data.exp_area,xdata);  
 end
 
@@ -236,11 +227,11 @@ function [val, gradient] = fit_func_nlopt(os)
 
     %% gauss convolution   
     signal_bs = conv_my(signal_b,signal_s,data.dE);
-    signal_sbs = conv_my(signal_s,signal_bs,data.dE);
-    signal_sbs = signal_sbs/max(signal_sbs);
+%     signal_sbs = conv_my(signal_s,signal_bs,data.dE);
+    signal_sbs = signal_bs/max(signal_bs);
     signal_sbs_full = [signal_sbs; zeros(length(data.E0+data.dE:data.dE:data.E0+10*data.sigma_C),1)];
     signal_sbs_gauss = conv_my(signal_sbs_full,data.Gauss_C,data.dE,'same')/data.dE;
-    res = signal_sbs_gauss + data.Gauss_H'*data.int_H + data.Gauss_D'*data.int_D;
+    res = signal_sbs_gauss + data.Gauss_H'*o.H;
     y = interp1(data.final_mesh,res*data.exp_area,data.x_exp);   
     val = sum((data.y_exp - y).^2);
     if mod(eval_num,1) == 0
