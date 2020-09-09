@@ -90,7 +90,7 @@ fit_result = an;
 figure;
 plot(data.E0 - data.x_exp,data.y_exp,'DisplayName','Experiment','Marker','o','LineWidth',1)
 hold on
-plot(data.E0 - data.x_exp,fit_func(x_res,data.x_exp),'DisplayName',['Summary signal, H = ',num2str(data.int_H),', D = ',num2str(data.int_D)],'LineWidth',2)
+plot(data.E0 - data.x_exp,fit_func(x_res,data.x_exp),'DisplayName',['Summary signal, H = ',num2str(x_res.H),', D = ',num2str(data.int_D)],'LineWidth',2)
 legend
 
 xlabel('Kinetic energy, eV')
