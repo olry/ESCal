@@ -48,7 +48,7 @@ an = scaling(an,xraypath);
 opt.algorithm = NLOPT_LN_COBYLA;
 opt.lower_bounds = lb;
 opt.upper_bounds = ub;
-opt.maxeval = 2000;
+opt.maxeval = 1;
 opt.min_objective = @fit_func_nlopt;
 opt.fc = { (@(x) aconstraint(x)) };
 opt.fc_tol = 1e-8; 
@@ -90,7 +90,7 @@ fit_result = an;
 figure;
 plot(data.E0 - data.x_exp,data.y_exp,'DisplayName','Experiment','Marker','o','LineWidth',1)
 hold on
-plot(data.E0 - data.x_exp,fit_func(x_res,data.x_exp),'DisplayName',['Summary signal, H = ',num2str(x_res.H),', D = ',num2str(data.int_D)],'LineWidth',2)
+plot(data.E0 - data.x_exp,fit_func(x_res,data.x_exp),'DisplayName','Summary signal','LineWidth',2)
 legend
 
 xlabel('Kinetic energy, eV')

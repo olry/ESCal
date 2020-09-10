@@ -4,23 +4,14 @@ function [energy,elf] = mopt(osc,path2xray,merge)
         merge = false;
     end
 
-    try 
-        f = load([path2xray osc.formula.symbols '.']);
-        num = 1;
-    catch
-        f = load([path2xray osc.formula.symbols(1) '.']);
-        num = length(osc.formula.symbols);
-    end
+    f = load([path2xray osc.formula.symbols{1} '.']);
+    num = length(osc.formula.symbols);
     optData = zeros(length(osc.formula.symbols),length(f),3);
     f1sum = 0;
     f2sum = 0;
 
     for i = 1:num
-        try
-            optData(i,:,:) = load([path2xray osc.formula.symbols '.']);
-        catch
-            optData(i,:,:) = load([path2xray osc.formula.symbols(i) '.']);
-        end
+        optData(i,:,:) = load([path2xray osc.formula.symbols{i} '.']);
         f1sum = f1sum + optData(i,:,2)*osc.formula.weights(i);
         f2sum = f2sum + optData(i,:,3)*osc.formula.weights(i);
     end
@@ -45,6 +36,4 @@ function [energy,elf] = mopt(osc,path2xray,merge)
         energy = optData(i,:,1);
     end
 end
-
-
 
