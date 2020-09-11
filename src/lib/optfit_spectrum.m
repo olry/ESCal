@@ -190,7 +190,7 @@ function y = fit_func(os,xdata)
     signal_sbs = signal_bs/max(signal_bs);
     signal_sbs_full = [signal_sbs; zeros(length(data.E0+data.dE:data.dE:data.E0+10*data.sigma_C),1)];
     signal_sbs_gauss = conv_my(signal_sbs_full,data.Gauss_C,data.dE,'same')/data.dE;
-    res = signal_sbs_gauss + data.Gauss_H'*o.H;
+    res = signal_sbs_gauss + data.Gauss_H'*o.H + data.Gauss_D'*o.D;
     y = interp1(data.final_mesh,res*data.exp_area,xdata);  
 end
 
@@ -231,7 +231,7 @@ function [val, gradient] = fit_func_nlopt(os)
     signal_sbs = signal_bs/max(signal_bs);
     signal_sbs_full = [signal_sbs; zeros(length(data.E0+data.dE:data.dE:data.E0+10*data.sigma_C),1)];
     signal_sbs_gauss = conv_my(signal_sbs_full,data.Gauss_C,data.dE,'same')/data.dE;
-    res = signal_sbs_gauss + data.Gauss_H'*o.H;
+    res = signal_sbs_gauss + data.Gauss_H'*o.H + data.Gauss_D'*o.D;
     y = interp1(data.final_mesh,res*data.exp_area,data.x_exp);   
     val = sum((data.y_exp - y).^2);
     if mod(eval_num,1) == 0
