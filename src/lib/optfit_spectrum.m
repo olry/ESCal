@@ -7,6 +7,7 @@ osc_min.A = ones(size(osc.A))*1e-10;
 osc_min.G = ones(size(osc.G))*0.25/h2ev; 
 osc_min.Om = ones(size(osc.Om))*osc.egap;
 osc_min.H = eps;
+osc_min.D = eps;
 
 switch osc.model
     case 'Drude'
@@ -28,7 +29,8 @@ end
        
 osc_max.A = ones(size(osc.A))*coef;
 osc_max.Om = ones(size(osc.Om))*100;
-osc_max.H = 0.2;
+osc_max.H = 0.1;
+osc_max.D = 0.1;
 
 lb = structToVec(osc_min);
 ub = structToVec(osc_max);
@@ -124,7 +126,7 @@ disp(['F-sum rule:',num2str(fsum), ' EAN = ', num2str(osc.Z)]);
 
 %%
 function v = structToVec(s)
-    v = [s.A, s.G, s.Om, s.H];
+    v = [s.A, s.G, s.Om, s.H, s.D];
 end
 
 function s = vecToStruct(v)
@@ -134,7 +136,8 @@ function s = vecToStruct(v)
     s.A = v(1:nA);
     s.G = v((1:nA)+nA);
     s.Om = v((1:nA)+nA*2);
-    s.H = v(end);
+    s.H = v(end-1);
+    s.D = v(end);
 end
 
 function [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o)
