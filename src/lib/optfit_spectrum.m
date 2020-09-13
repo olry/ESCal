@@ -4,7 +4,7 @@ eval_num = 0;
 
 %% constraints
 osc_min.A = ones(size(osc.A))*1e-10;
-osc_min.G = ones(size(osc.G))*0.25/h2ev; 
+osc_min.G = [2.0 2.0 6.6526 4.4512 5.8070 5.5216 5.1022 8.3311 7.9078 30.0413 29.3755 28.7187 14.9281]; 
 osc_min.Om = ones(size(osc.Om))*osc.egap;
 osc_min.H = eps;
 osc_min.D = eps;
