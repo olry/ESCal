@@ -48,8 +48,12 @@ if strcmp( osc.model,'Drude')
     for j=1:length(osc.A)
         [epsDrud_re, epsDrud_im] = Drude(q,w,osc.Om(j),osc.G(j),osc.alpha,osc.Ef);
         eps_re = eps_re - osc.A(j)*epsDrud_re;
-        ind = bsxfun(@gt,w,osc.egap);
-        eps_im(ind,:) = eps_im(ind,:) + osc.A(j)*epsDrud_im(ind,:);
+        if gapEffect
+            ind = bsxfun(@gt,w,osc.egap);
+            eps_im(ind,:) = eps_im(ind,:) + osc.A(j)*epsDrud_im(ind,:);
+        else
+            eps_im = eps_im + osc.A(j)*epsDrud_im;
+        end
     end
     eps = complex(eps_re,eps_im);
     if strcmp(interface,'bulk')
@@ -104,7 +108,11 @@ elseif strcmp( osc.model,'Mermin')
     end
     eps = complex(1,0)./eps1;
     if strcmp(interface,'bulk')
-        ELF = imag(-1./eps);
+        if xraypath
+            ELF = get_henke_data(imag(-1./eps));           
+        else
+            ELF = imag(-1./eps);
+        end
     elseif strcmp(interface,'surface')
         ELF = imag(-1./(eps+1));
     end
@@ -118,13 +126,10 @@ elseif strcmp( osc.model,'MerminLL')
         eps1 = eps1 + osc.A(j)*(complex(1,0)./epsMerm);
     end
     eps = complex(1,0)./eps1;
-    if strcmp(interface,'bulk')
+    if xraypath
+        ELF = get_henke_data(imag(-1./eps));           
+    else
         ELF = imag(-1./eps);
-    elseif strcmp(interface,'surface')
-        ELF = imag(-1./(eps+1));
-    end
-    if gapEffect
-        ELF(w<osc.egap,:) = 0;
     end
 else
     error('Choose the correct model name: Drude,DrudeLindhard,Mermin,MerminLL');
