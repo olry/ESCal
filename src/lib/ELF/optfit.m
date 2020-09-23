@@ -25,13 +25,13 @@ switch osc.model
 end
        
 osc_max.A = ones(size(osc.A))*coef;
-osc_max.Om = ones(size(osc.Om))*100;
+osc_max.Om = ones(size(osc.Om))*150;
 
 lb = structToVec(osc_min);
 ub = structToVec(osc_max);
 
 %% LSQ fitting (local minimum search)
-%{
+% {
 rng default;
 
 options = optimoptions('lsqcurvefit','UseParallel',true,'Display','iter');
@@ -40,17 +40,17 @@ options = optimoptions('lsqcurvefit','UseParallel',true,'Display','iter');
 % options.MaxFunctionEvaluations = 1e4;
 % options.StepTolerance = 1e-12;
 % options.MaxIterations = 1e4;
-x_res = lsqcurvefit(@fit_func_elf, structToVec(osc), x_exp, y_exp, lb, ub, options);
+x_res = lsqcurvefit(@fit_func, structToVec(osc), x_exp, y_exp, lb, ub, options);
 an = vecToStruct(x_res);
-an = scaling(an);
+an = scaling(an,xraypath);
 % an = scaling_ohne_henke(an);
 %}
 %% NLopt
-% {
+%{
 opt.algorithm = NLOPT_LN_COBYLA;
 opt.lower_bounds = lb;
 opt.upper_bounds = ub;
-opt.maxeval = 1e6;
+opt.maxeval = 1e4;
 opt.min_objective = @fit_func_nlopt;
 if osc.henke
     if strcmp(osc.model,'Drude')
@@ -161,7 +161,7 @@ end
 
 function y = fit_func(x,xdata)
     o = vecToStruct(x);
-%     o = scaling(o);
+    o = scaling(o,xraypath);
     switch fitgoal
         case 'elf'           
             [eloss,elf] = mopt(o,xraypath,true);
