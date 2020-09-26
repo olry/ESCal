@@ -5,7 +5,8 @@ eval_num = 0;
 %% constraints
 osc_min.A = ones(size(osc.A))*1e-10;
 osc_min.G = ones(size(osc.G))*0.02; 
-osc_min.Om = ones(size(osc.Om))*osc.egap;
+osc_min.Om = ones(size(osc.Om));
+osc_min.egap = 1.7;
 osc_min.H = eps;
 osc_min.D = eps;
 
@@ -29,8 +30,9 @@ end
        
 osc_max.A = ones(size(osc.A))*coef;
 osc_max.Om = ones(size(osc.Om))*100;
-osc_max.H = 0.1;
-osc_max.D = 0.1;
+osc_max.egap = 3.2;
+osc_max.H = 0.06;
+osc_max.D = 0.06;
 
 lb = structToVec(osc_min);
 ub = structToVec(osc_max);
@@ -50,11 +52,11 @@ an = scaling(an,xraypath);
 opt.algorithm = NLOPT_LN_COBYLA;
 opt.lower_bounds = lb;
 opt.upper_bounds = ub;
-opt.maxeval = 500;
+opt.maxeval = 2000;
 opt.min_objective = @fit_func_nlopt;
 opt.fc = { (@(x) aconstraint(x)) };
-% opt.fc_tol = 1e-8; 
-% opt.xtol_rel = 1e-10;
+opt.fc_tol = 1e-8; 
+opt.xtol_rel = 1e-10;
 [x_res] = nlopt_optimize(opt, structToVec(osc));
 an = vecToStruct(x_res);
 %}
@@ -126,7 +128,7 @@ disp(['F-sum rule:',num2str(fsum), ' EAN = ', num2str(osc.Z)]);
 
 %%
 function v = structToVec(s)
-    v = [s.A, s.G, s.Om, s.H, s.D];
+    v = [s.A, s.G, s.Om, s.egap, s.H, s.D];
 %     v = [s.A, s.G, s.Om];
 end
 
@@ -137,6 +139,7 @@ function s = vecToStruct(v)
     s.A = v(1:nA);
     s.G = v((1:nA)+nA);
     s.Om = v((1:nA)+nA*2);
+    s.egap = v(end-2);
     s.H = v(end-1);
     s.D = v(end);
 end
