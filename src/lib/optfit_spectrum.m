@@ -61,25 +61,6 @@ opt.xtol_rel = 1e-10;
 an = vecToStruct(x_res);
 %}
 
-%% fmincon
-%{
-rng default % For reproducibility
-
-problem = createOptimProblem('fmincon',...
-'objective',@fit_func_fmincon,...
-'x0',structToVec(osc),'options',...
-optimoptions('fmincon','Algorithm','sqp','Display','iter','UseParallel',true));
-problem.lb = lb;
-problem.ub = ub;
-problem.nonlcon = @aconstraint;
-%     problem.options.MaxIterations = 1e6;
-%     problem.options.OptimalityTolerance = 1e-15;
-%     problem.options.StepTolerance = 1e-15;
-%     problem.options.MaxFunctionEvaluations = 1e6;
-x_res = fmincon(problem);
-an = vecToStruct(x_res);
-%}
-
 disp(an);
 fit_result = an;
 

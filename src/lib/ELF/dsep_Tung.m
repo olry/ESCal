@@ -35,8 +35,8 @@ else
 %     ELF = eps_sum_surf(osc);
     ELF = eps_sum_allwq(osc,'surface');
     
-    q_s_plus = sqrt(q.^2 - ( bsxfun(@plus,(osc.eloss/h2ev)',q.^2./2) ./ sqrt(2*E0/h2ev) ).^2).*cosd(theta) + ( bsxfun(@plus,(osc.eloss/h2ev)',q.^2./2) ./sqrt(2*E0/h2ev)).*sind(theta); 
-    q_s_minus = sqrt(q.^2 - ( bsxfun(@plus,(osc.eloss/h2ev)',q.^2./2) ./ sqrt(2*E0/h2ev) ).^2).*cosd(theta) - ( bsxfun(@plus,(osc.eloss/h2ev)',q.^2./2) ./sqrt(2*E0/h2ev)).*sind(theta);
+    q_s_plus = sqrt(q.^2 - ( (q.^2./2 + osc.eloss/h2ev) ./ sqrt(2*E0/h2ev) ).^2).*cosd(theta) + ( (q.^2./2 + osc.eloss/h2ev) ./sqrt(2*E0/h2ev)).*sind(theta); 
+    q_s_minus = sqrt(q.^2 - ( (q.^2./2 + osc.eloss/h2ev) ./ sqrt(2*E0/h2ev) ).^2).*cosd(theta) - ( (q.^2./2 + osc.eloss/h2ev) ./sqrt(2*E0/h2ev)).*sind(theta);
     
     res_plus = bsxfun(@times,ELF,abs(q_s_plus))./(q.^3);
     res_minus = bsxfun(@times,ELF,abs(q_s_minus))./(q.^3);
@@ -50,16 +50,6 @@ else
         x_in_plus(i) = 1/pi/(E0/h2ev) * trapz(q(i,:),res_plus(i,:)) *(1/h2ev/a0);
         x_in_minus(i) = 1/pi/(E0/h2ev) * trapz(q(i,:),res_minus(i,:)) *(1/h2ev/a0);
     end
-
-    %% Plot
-%     figure;
-%     xlim([0 100])
-%     hold on
-%     box on
-%     plot(eloss,x_in_plus + x_in_minus)
-%    
-%     Y = ['siimfp = ',num2str(trapz(eloss,x_in_plus + x_in_minus))];
-%     disp(Y);
 
     dsep = x_in_plus + x_in_minus; %./trapz(osc.eloss,x_in);
 end

@@ -1,11 +1,17 @@
-function osc_scaled = scaling(osc,xraypath)
+function osc_scaled = scaling(osc,xraypath,varargin)
+
+if nargin<2
+    xraypath = '';
+end
 
     o = convert2au(osc);
-
-    [eloss,elf_henke] = mopt(osc,xraypath,false);
-    ind = bsxfun(@gt,eloss,100);
-    bsum_henke = 1/(2*pi^2)*trapz(eloss(ind)/h2ev,bsxfun(@times,eloss(ind)/h2ev,elf_henke(ind)));
-    
+    if xraypath
+        [eloss,elf_henke] = mopt(osc,xraypath,false);
+        ind = bsxfun(@gt,eloss,100);
+        bsum_henke = 1/(2*pi^2)*trapz(eloss(ind)/h2ev,bsxfun(@times,eloss(ind)/h2ev,elf_henke(ind)));
+    else
+        bsum_henke = 0;
+    end
     switch o.model
         case 'Drude'
             o.A = o.A/sum(o.A)*4*pi*(o.ne*a0^3 - bsum_henke);
