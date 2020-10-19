@@ -147,7 +147,19 @@ function y = fit_func(os,xdata)
 %     o = scaling(o,xraypath);
 
     %% x_in        
-    [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o);
+%     [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o);
+    dsep = dsep_Tung_2(o, data.E0, 12, false, 60);
+    diimfp = ndiimfp(o, data.E0, 12, false);
+
+    sep = trapz(o.eloss,dsep); %*h2ev;
+
+    xs_new = interp1(o.eloss,dsep,data.mesh_eloss);
+    xs_new(isnan(xs_new)) = 0;
+    x_in_s = xs_new./trapz(data.mesh_eloss,xs_new); % dsep
+
+    xb_new = interp1(o.eloss,diimfp,data.mesh_eloss);
+    xb_new(isnan(xb_new)) = 0;
+    x_in_b = xb_new./trapz(data.mesh_eloss,xb_new); % diimfp
 
     %% spectrum bulk
     data.Mat{1}.SetManualDIIMFP(flipud((data.E0-data.mesh_eloss)'),flipud(x_in_b'));
@@ -168,7 +180,7 @@ function y = fit_func(os,xdata)
     Rs.N_in = 15;
     Rs.Calculate;
     convs_surf = Rs.CalculateEnergyConvolutions;
-    Cs = poisspdf(0:Rs.N_in,int_over_depth_sigma_surf);
+    Cs = poisspdf(0:Rs.N_in,sep);
 %     Cs = Cs/Cs(1);
     signal_s = sum(convs_surf*diag(Cs),2);
 
@@ -179,7 +191,8 @@ function y = fit_func(os,xdata)
     signal_sbs_full = [signal_sbs; zeros(length(data.E0+data.dE:data.dE:data.E0+10*data.sigma_C),1)];
     signal_sbs_gauss = conv_my(signal_sbs_full,data.Gauss_C,data.dE,'same')/data.dE;
     res = signal_sbs_gauss + data.Gauss_H'*o.H + data.Gauss_D'*o.D;
-    y = interp1(data.final_mesh,res*data.exp_area,xdata);  
+    y = interp1(data.final_mesh,res*data.exp_area,xdata); 
+    y(isnan(y)) = eps;
 end
 
 
@@ -188,7 +201,19 @@ function [val, gradient] = fit_func_nlopt(os)
     o = vecToStruct(os);
 
     %% x_in        
-    [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o);
+%     [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o);
+    dsep = dsep_Tung_2(o, data.E0, 12, false, 60);
+    diimfp = ndiimfp(o, data.E0, 12, false);
+
+    sep = trapz(o.eloss,dsep); %*h2ev;
+
+    xs_new = interp1(o.eloss,dsep,data.mesh_eloss);
+    xs_new(isnan(xs_new)) = 0;
+    x_in_s = xs_new./trapz(data.mesh_eloss,xs_new); % dsep
+
+    xb_new = interp1(o.eloss,diimfp,data.mesh_eloss);
+    xb_new(isnan(xb_new)) = 0;
+    x_in_b = xb_new./trapz(data.mesh_eloss,xb_new); % diimfp
 
     %% spectrum bulk
     data.Mat{1}.SetManualDIIMFP(flipud((data.E0-data.mesh_eloss)'),flipud(x_in_b'));
@@ -209,7 +234,7 @@ function [val, gradient] = fit_func_nlopt(os)
     Rs.N_in = 15;
     Rs.Calculate;
     convs_surf = Rs.CalculateEnergyConvolutions;
-    Cs = poisspdf(0:Rs.N_in,int_over_depth_sigma_surf);
+    Cs = poisspdf(0:Rs.N_in,sep);
 %     Cs = Cs/Cs(1);
     signal_s = sum(convs_surf*diag(Cs),2);
 
