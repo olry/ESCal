@@ -6,8 +6,6 @@ eval_num = 0;
 osc_min.A = ones(size(osc.A))*1e-10;
 osc_min.G = ones(size(osc.G))*0.02; 
 osc_min.Om = ones(size(osc.Om));
-osc_min.H = eps;
-osc_min.D = eps;
 
 switch osc.model
     case 'Drude'
@@ -28,9 +26,16 @@ switch osc.model
 end
        
 osc_max.A = ones(size(osc.A))*coef;
-osc_max.Om = ones(size(osc.Om))*100;
-osc_max.H = 0.08;
-osc_max.D = 0.08;
+osc_max.Om = ones(size(osc.Om))*1000;
+
+if osc.H ~= 0
+    osc_min.H = eps;
+    osc_max.H = 0.05;
+end
+if osc.D ~= 0
+    osc_min.D = eps;
+    osc_max.D = 0.05;
+end
 
 lb = structToVec(osc_min);
 ub = structToVec(osc_max);
@@ -63,13 +68,7 @@ disp(an);
 fit_result = an;
 
 %% Plotting
-
-% plot(data.E0 - data.x_exp,data.y_exp,'DisplayName','Experiment','Marker','o','LineWidth',1)
-% hold on
-% plot(data.E0 - data.mesh_eloss,data.Gauss_H*data.int_H,'DisplayName','H signal','LineWidth',2)
-% plot(data.E0 - data.mesh_eloss,data.Gauss_D*data.int_D,'DisplayName','D signal','LineWidth',2)
-% plot(data.E0 - data.x_exp,fit_func(x_res,data.x_exp),'DisplayName','Summary signal','LineWidth',2)
-
+%{
 figure;
 plot(data.E0 - data.x_exp,data.y_exp,'DisplayName','Experiment','Marker','o','LineWidth',1)
 hold on
@@ -79,17 +78,7 @@ legend
 xlabel('Kinetic energy, eV')
 ylabel('Intensity, rel.un.')
 set(findall(gcf,'-property','FontSize'),'FontSize',25)
-
-% ylim([0 0.05])
-% xlim([-3 40])
-
-% set(h,'Units','Inches');
-% pos = get(h,'Position');
-% set(h,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
-% txt = 'chsurfs';
-% print(h,txt,'-dpdf','-r0')
-% txt = 'chsurfs.fig';
-% savefig(txt)
+%}
 
 %% Sum-rules
 
@@ -107,8 +96,13 @@ disp(['F-sum rule:',num2str(fsum), ' EAN = ', num2str(osc.Z)]);
 
 %%
 function v = structToVec(s)
-    v = [s.A, s.G, s.Om, s.H, s.D];
-%     v = [s.A, s.G, s.Om];
+    if osc.H ~= 0 && osc.D == 0
+        v = [s.A, s.G, s.Om, s.H];
+    elseif osc.D ~= 0 && osc.H == 0
+        v = [s.A, s.G, s.Om, s.D];
+    else
+        v = [s.A, s.G, s.Om, s.H, s.D];
+    end
 end
 
 function s = vecToStruct(v)
@@ -118,8 +112,14 @@ function s = vecToStruct(v)
     s.A = v(1:nA);
     s.G = v((1:nA)+nA);
     s.Om = v((1:nA)+nA*2);
-    s.H = v(end-1);
-    s.D = v(end);
+    if osc.H ~= 0 && osc.D == 0
+        s.H = v(end);
+    elseif osc.D ~= 0 && osc.H == 0
+        s.D = v(end);
+    else
+        s.H = v(end-1);
+        s.D = v(end);
+    end
 end
 
 function [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o)
