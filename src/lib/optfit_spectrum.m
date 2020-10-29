@@ -5,7 +5,7 @@ eval_num = 0;
 %% constraints
 osc_min.A = ones(size(osc.A))*1e-10;
 osc_min.G = ones(size(osc.G))*0.02; 
-osc_min.Om = ones(size(osc.Om));
+osc_min.Om = ones(size(osc.Om))*4;
 
 switch osc.model
     case 'Drude'
