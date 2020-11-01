@@ -16,13 +16,13 @@ function [fitresult, gof, E0] = gaussFit(x, y)
 
 %% Fit: 'gaussian'.
 [xData, yData] = prepareCurveData( x, y );
-indE0 = find(y==max(y));
+indE0 = y == max(y);
 E0 = x(indE0);
 limX = round(0.98*indE0);
 
 % Set up fittype and options.
 ft = fittype( 'gauss1' );
-excludedPoints = excludedata( xData, yData, 'Indices', [1:limX] );
+excludedPoints = excludedata( xData, yData, 'Indices', 1:limX );
 opts = fitoptions( 'Method', 'NonlinearLeastSquares' );
 opts.Display = 'Off';
 opts.Lower = [-Inf -Inf 0];
