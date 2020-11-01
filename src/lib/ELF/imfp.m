@@ -3,7 +3,7 @@ function l_in = imfp(osc,energy,material,Penn,elf,varargin)
     if nargin < 3
         material = 'metal';
     end
-    if nargin < 5
+    if nargin < 4
         Penn = false;
     end
     
@@ -13,14 +13,15 @@ function l_in = imfp(osc,energy,material,Penn,elf,varargin)
         osc.eloss = [fliplr(500:-.5:eps) fliplr(energy:-10:510)];
     end
     if Penn
-        if nargin < 4
+        disp('Using the Penn algorithm ...');
+        if nargin < 5
             elf = eps_sum(osc);
             l_in = iimfp_penn(energy,osc.eloss,elf);
         else
             l_in = iimfp_penn(energy,elf(:,1),elf(:,2));
         end            
     else
-        w_in = ndiimfp(osc,energy,11,false,false);
+        w_in = ndiimfp(osc,energy,11,false);
         if strcmp(material,'metal')
             int_emesh = eps:0.1:energy - osc.Ef;
         elseif strcmp(material,'insulator')

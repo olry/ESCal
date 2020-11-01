@@ -1,8 +1,5 @@
-function ELF = eps_sum_allwq(osc,interface,gapEffect,xraypath,varargin)
+function ELF = eps_sum_allwq(osc,interface,gapEffect,varargin)
 
-if nargin < 4
-    xraypath = '';
-end
 if nargin < 3
     gapEffect = false;
 end
@@ -34,8 +31,6 @@ end
 %}
 %%
 
-energy = osc.eloss;
-ind_energy = bsxfun(@le,energy,100);
 osc = convert2au(osc); %converts to atomic units
 
 w = osc.eloss;
@@ -57,13 +52,8 @@ if strcmp( osc.model,'Drude')
     end
     eps = complex(eps_re,eps_im);
     if strcmp(interface,'bulk')
-        if xraypath
-            ELF = get_henke_data(imag(-1./eps));     
-        else
-            ELF = imag(-1./eps);
-        end
+        ELF = imag(-1./eps);
     elseif strcmp(interface,'surface')
-        %ELF = eps_im./((eps_re+1).^2 + eps_im.^2);
         ELF = imag(-1./(eps+1));
     end
 elseif strcmp( osc.model,'DrudeLindhard')
@@ -108,11 +98,7 @@ elseif strcmp( osc.model,'Mermin')
     end
     eps = complex(1,0)./eps1;
     if strcmp(interface,'bulk')
-        if xraypath
-            ELF = get_henke_data(imag(-1./eps));           
-        else
-            ELF = imag(-1./eps);
-        end
+        ELF = imag(-1./eps);
     elseif strcmp(interface,'surface')
         ELF = imag(-1./(eps+1));
     end
@@ -126,20 +112,10 @@ elseif strcmp( osc.model,'MerminLL')
         eps1 = eps1 + osc.A(j)*(complex(1,0)./epsMerm);
     end
     eps = complex(1,0)./eps1;
-    if xraypath
-        ELF = get_henke_data(imag(-1./eps));           
-    else
-        ELF = imag(-1./eps);
-    end
+    ELF = imag(-1./eps);
 else
     error('Choose the correct model name: Drude,DrudeLindhard,Mermin,MerminLL');
     
 end
 
-    function ELF = get_henke_data(elf_model)
-        [eloss,elf_henke] = mopt(osc,xraypath);
-        ind = bsxfun(@gt,eloss,100);
-        ELF = [elf_model(ind_energy,:); repmat(elf_henke(ind)',1,length(elf_model(1,:)))];
-        ELF = interp1([energy(ind_energy); eloss(ind)'],ELF,energy);
-    end
 end
