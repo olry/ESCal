@@ -5,7 +5,7 @@ eval_num = 0;
 %% constraints
 osc_min.A = ones(size(osc.A))*1e-10;
 osc_min.G = ones(size(osc.G))*0.02; 
-osc_min.Om = ones(size(osc.Om))*4;
+osc_min.Om = ones(size(osc.Om))*osc.Om(1);
 
 switch osc.model
     case 'Drude'
@@ -72,7 +72,7 @@ fit_result = an;
 figure;
 plot(data.E0 - data.x_exp,data.y_exp,'DisplayName','Experiment','Marker','o','LineWidth',1)
 hold on
-plot(data.E0 - data.x_exp,fit_func(x_res,data.x_exp),'DisplayName','Summary signal','LineWidth',2)
+plot(data.E0 - data.x_exp,fit_func(x_res),'DisplayName','Summary signal','LineWidth',2)
 legend
 
 xlabel('Kinetic energy, eV')
@@ -122,51 +122,49 @@ function s = vecToStruct(v)
     end
 end
 
-function [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o)
-    [diimfp,dsep,sigma] = ndiimfp_Li(o,data.E0,data.depth,data.theta,8,xraypath);
-    r = data.depth./cosd(data.theta);
+function [x_in_b, x_in_s, sep] = crosssection(o)
+    depth = -5:5;
+    clear_bulk = zeros(length(o.eloss), length(depth));
+    reduced_bulk = zeros(length(o.eloss), length(depth));
+    surface = zeros(length(o.eloss), length(depth));
+    E0 = data.E0;
+    theta = data.theta;
 
-    int_over_depth_dsep = trapz(r,dsep,2);
-    int_over_depth_sigma_surf = trapz(r,sigma); % SEP
+    parfor r = 1:length(depth)
+        disp(r)
+        [clear_bulk(:,r),surface(:,r),reduced_bulk(:,r)] = ndiimfp_Li(o,E0,depth(r),theta,9);
+    end
+    ind = depth >= 0;
+    bulk = clear_bulk(:,ind) + reduced_bulk(:,ind);
+    bulk = trapz(depth(ind),bulk,2);
+    surface = trapz(depth,surface,2);
 
-    xs_new = interp1(o.eloss,int_over_depth_dsep,data.mesh_eloss);
+    sep = trapz(o.eloss,surface); 
+
+    xs_new = interp1(o.eloss,surface,data.mesh_eloss);
     xs_new(isnan(xs_new)) = 0;
     x_in_s = xs_new./trapz(data.mesh_eloss,xs_new); % dsep
 
-    xb_new = interp1(o.eloss,diimfp,data.mesh_eloss);
+    xb_new = interp1(o.eloss,bulk,data.mesh_eloss);
     xb_new(isnan(xb_new)) = 0;
     x_in_b = xb_new./trapz(data.mesh_eloss,xb_new); % diimfp
 end
 
-function y = fit_func(os,xdata)
+function y = fit_func(os)
 
     o = vecToStruct(os);
-%     o = scaling(o,xraypath);
 
     %% x_in        
-%     [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o);
-    dsep = dsep_Tung_2(o, data.E0, 12, false, 60);
-    diimfp = ndiimfp(o, data.E0, 12, false);
-
-    sep = trapz(o.eloss,dsep); %*h2ev;
-
-    xs_new = interp1(o.eloss,dsep,data.mesh_eloss);
-    xs_new(isnan(xs_new)) = 0;
-    x_in_s = xs_new./trapz(data.mesh_eloss,xs_new); % dsep
-
-    xb_new = interp1(o.eloss,diimfp,data.mesh_eloss);
-    xb_new(isnan(xb_new)) = 0;
-    x_in_b = xb_new./trapz(data.mesh_eloss,xb_new); % diimfp
+    [x_in_b, x_in_s, sep] = crosssection(o);
 
     %% spectrum bulk
     data.Mat{1}.SetManualDIIMFP(flipud((data.E0-data.mesh_eloss)'),flipud(x_in_b'));
     Rb = NSReflection(Layer(data.Mat{1}));
     Rb.theta0 = data.theta0;
-    Rb.N_in = 15;
+    Rb.N_in = 10;
     Rb.Calculate;
     Rb.CalculateInelasticScatteringDistribution(data.theta,data.phi);
-    Cb = Rb.InelasticScatteringDistribution;
-%     Cb = Rb.InelasticScatteringDistribution/Rb.InelasticScatteringDistribution(1);
+    Cb = Rb.InelasticScatteringDistribution/Rb.InelasticScatteringDistribution(1); % !!! very important to get the inelastic background right
     convs_bulk = Rb.CalculateEnergyConvolutions;
     signal_b = sum(convs_bulk*diag(Cb),2);
 
@@ -174,53 +172,38 @@ function y = fit_func(os,xdata)
     data.Mat{2}.SetManualDIIMFP(flipud((data.E0-data.mesh_eloss)'),flipud(x_in_s'));
     Rs = NSReflection(Layer(data.Mat{2}));
     Rs.theta0 = data.theta0;
-    Rs.N_in = 15;
+    Rs.N_in = 10;
     Rs.Calculate;
     convs_surf = Rs.CalculateEnergyConvolutions;
     Cs = poisspdf(0:Rs.N_in,sep);
-%     Cs = Cs/Cs(1);
     signal_s = sum(convs_surf*diag(Cs),2);
 
     %% gauss convolution   
-    signal_bs = conv_my(signal_b,signal_s,data.dE);
-%     signal_sbs = conv_my(signal_s,signal_bs,data.dE);
-    signal_sbs = signal_bs/max(signal_bs);
-    signal_sbs_full = [signal_sbs; zeros(length(data.E0+data.dE:data.dE:data.E0+10*data.sigma_C),1)];
-    signal_sbs_gauss = conv_my(signal_sbs_full,data.Gauss_C,data.dE,'same')/data.dE;
-    res = signal_sbs_gauss + data.Gauss_H'*o.H + data.Gauss_D'*o.D;
-    y = interp1(data.final_mesh,res*data.exp_area,xdata); 
+    signal_bs = conv_my(signal_b,signal_s,data.dE); % bulk+surface convolution
+    signal_bs_full = [signal_bs; zeros(length(data.E0+data.dE:data.dE:data.E0+10*data.sigma_C),1)];
+    signal_bs_full_gauss = conv_my(signal_bs_full,data.Gauss_C,data.dE);
+    signal_bs_full_gauss_h = signal_bs_full_gauss + data.Gauss_H'*osc.H; %+ data.Gauss_D'*osc.D
+    y = interp1(data.final_mesh,signal_bs_full_gauss_h,data.x_exp);  
     y(isnan(y)) = eps;
 end
 
 
 function [val, gradient] = fit_func_nlopt(os)
+    
     eval_num = eval_num + 1;
     o = vecToStruct(os);
 
     %% x_in        
-%     [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o);
-    dsep = dsep_Tung_2(o, data.E0, 12, false, 60);
-    diimfp = ndiimfp(o, data.E0, 12, false);
-
-    sep = trapz(o.eloss,dsep); %*h2ev;
-
-    xs_new = interp1(o.eloss,dsep,data.mesh_eloss);
-    xs_new(isnan(xs_new)) = 0;
-    x_in_s = xs_new./trapz(data.mesh_eloss,xs_new); % dsep
-
-    xb_new = interp1(o.eloss,diimfp,data.mesh_eloss);
-    xb_new(isnan(xb_new)) = 0;
-    x_in_b = xb_new./trapz(data.mesh_eloss,xb_new); % diimfp
+    [x_in_b, x_in_s, sep] = crosssection(o);
 
     %% spectrum bulk
     data.Mat{1}.SetManualDIIMFP(flipud((data.E0-data.mesh_eloss)'),flipud(x_in_b'));
     Rb = NSReflection(Layer(data.Mat{1}));
     Rb.theta0 = data.theta0;
-    Rb.N_in = 15;
+    Rb.N_in = 10;
     Rb.Calculate;
     Rb.CalculateInelasticScatteringDistribution(data.theta,data.phi);
-    Cb = Rb.InelasticScatteringDistribution;
-%     Cb = Rb.InelasticScatteringDistribution/Rb.InelasticScatteringDistribution(1);
+    Cb = Rb.InelasticScatteringDistribution/Rb.InelasticScatteringDistribution(1); % !!! very important to get the inelastic background right
     convs_bulk = Rb.CalculateEnergyConvolutions;
     signal_b = sum(convs_bulk*diag(Cb),2);
 
@@ -228,21 +211,19 @@ function [val, gradient] = fit_func_nlopt(os)
     data.Mat{2}.SetManualDIIMFP(flipud((data.E0-data.mesh_eloss)'),flipud(x_in_s'));
     Rs = NSReflection(Layer(data.Mat{2}));
     Rs.theta0 = data.theta0;
-    Rs.N_in = 15;
+    Rs.N_in = 10;
     Rs.Calculate;
     convs_surf = Rs.CalculateEnergyConvolutions;
     Cs = poisspdf(0:Rs.N_in,sep);
-%     Cs = Cs/Cs(1);
     signal_s = sum(convs_surf*diag(Cs),2);
 
     %% gauss convolution   
-    signal_bs = conv_my(signal_b,signal_s,data.dE);
-%     signal_sbs = conv_my(signal_s,signal_bs,data.dE);
-    signal_sbs = signal_bs/max(signal_bs);
-    signal_sbs_full = [signal_sbs; zeros(length(data.E0+data.dE:data.dE:data.E0+10*data.sigma_C),1)];
-    signal_sbs_gauss = conv_my(signal_sbs_full,data.Gauss_C,data.dE,'same')/data.dE;
-    res = signal_sbs_gauss + data.Gauss_H'*o.H + data.Gauss_D'*o.D;
-    y = interp1(data.final_mesh,res*data.exp_area,data.x_exp);   
+    signal_bs = conv_my(signal_b,signal_s,data.dE); % bulk+surface convolution
+    signal_bs_full = [signal_bs; zeros(length(data.E0+data.dE:data.dE:data.E0+10*data.sigma_C),1)];
+    signal_bs_full_gauss = conv_my(signal_bs_full,data.Gauss_C,data.dE);
+    signal_bs_full_gauss_h = signal_bs_full_gauss + data.Gauss_H'*osc.H; %+ data.Gauss_D'*osc.D
+    y = interp1(data.final_mesh,signal_bs_full_gauss_h,data.x_exp); 
+    y(isnan(y)) = eps;
     val = sum((data.y_exp - y).^2);
     if mod(eval_num,1) == 0
         disp(['Number of function evaluations:', num2str(eval_num), ' chisq:', num2str(val)]);
@@ -276,47 +257,6 @@ function [val, gradient] = aconstraint(x)
     if (nargout > 1)
         gradient = [0, 0.5 / val];
     end   
-end
-
-function val = fit_func_fmincon(os)
-
-    o = vecToStruct(os);
-
-    %% x_in        
-    [x_in_b, x_in_s, int_over_depth_sigma_surf] = crosssection(o);
-
-    %% spectrum bulk
-    data.Mat{1}.SetManualDIIMFP(flipud((data.E0-data.mesh_eloss)'),flipud(x_in_b'));
-    Rb = NSReflection(Layer(data.Mat{1}));
-    Rb.theta0 = data.theta0;
-    Rb.N_in = 15;
-    Rb.Calculate;
-    Rb.CalculateInelasticScatteringDistribution(data.theta,data.phi);
-    Cb = Rb.InelasticScatteringDistribution;
-%     Cb = Rb.InelasticScatteringDistribution/Rb.InelasticScatteringDistribution(1);
-    convs_bulk = Rb.CalculateEnergyConvolutions;
-    signal_b = sum(convs_bulk*diag(Cb),2);
-
-    %% spectrum surface
-    data.Mat{2}.SetManualDIIMFP(flipud((data.E0-data.mesh_eloss)'),flipud(x_in_s'));
-    Rs = NSReflection(Layer(data.Mat{2}));
-    Rs.theta0 = data.theta0;
-    Rs.N_in = 15;
-    Rs.Calculate;
-    convs_surf = Rs.CalculateEnergyConvolutions;
-    Cs = poisspdf(0:Rs.N_in,int_over_depth_sigma_surf);
-%     Cs = Cs/Cs(1);
-    signal_s = sum(convs_surf*diag(Cs),2);
-
-    %% gauss convolution   
-    signal_bs = conv_my(signal_b,signal_s,data.dE);
-    signal_sbs = conv_my(signal_s,signal_bs,data.dE);
-    signal_sbs = signal_sbs/max(signal_sbs);
-    signal_sbs_full = [signal_sbs; zeros(length(data.E0+data.dE:data.dE:data.E0+10*data.sigma_C),1)];
-    signal_sbs_gauss = conv_my(signal_sbs_full,data.Gauss_C,data.dE,'same')/data.dE;
-    res = signal_sbs_gauss + data.Gauss_H'*data.int_H + data.Gauss_D'*data.int_D;
-    y = interp1(data.final_mesh,res*data.exp_area,data.x_exp);   
-    val = sum((data.y_exp - y).^2);
 end
 
 end

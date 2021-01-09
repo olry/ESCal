@@ -21,6 +21,7 @@ function l_in = imfp(osc,energy,material,Penn,elf,varargin)
             l_in = iimfp_penn(energy,elf(:,1),elf(:,2));
         end            
     else
+%         w_in = ndiimfp(osc,energy,11,false,false,true);
         w_in = ndiimfp(osc,energy,11,false);
         if strcmp(material,'metal')
             int_emesh = eps:0.1:energy - osc.Ef;

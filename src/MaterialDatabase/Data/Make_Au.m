@@ -13,8 +13,9 @@ Au.Ep = 29.92;
 Au.Ef = 9.0;
 
 Au.DIIMFP.E0 = [100;200;500;1000;2000;5000;10000;];
+% Au.DIIMFP.E0 = [10:5:50 60:10:90 100 200 500 1000 2000 5000 10000]';
 for i=1:numel(Au.DIIMFP.E0)
-    WernerData = load([cd '\W_in\' Au.Mat num2str(Au.DIIMFP.E0(i)) '.diimfp']);
+    WernerData = load([cd '/W_in/' Au.Mat num2str(Au.DIIMFP.E0(i)) '.diimfp']);
     Au.DIIMFP.y(:,i) = WernerData(:,3);
     if i==1
          Au.DIIMFP.x = WernerData(:,1);

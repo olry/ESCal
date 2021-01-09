@@ -33,12 +33,20 @@ opts.Exclude = excludedPoints;
 [fitresult, gof] = fit( xData, yData, ft, opts );
 
 % Plot fit with data.
-% figure( 'Name', 'Gaussian fit' );
-% h = plot( fitresult, xData, yData, excludedPoints );
-% legend( h, 'y vs. x', 'Excluded y vs. x', 'untitled fit 1', 'Location', 'NorthEast' );
-% % Label axes
-% xlabel x
-% ylabel y
-% grid on
+%{
+figure( 'Name', 'Gaussian fit' );
+h = plot( fitresult, xData, yData, excludedPoints );
+legend( h, 'y vs. x', 'Excluded y vs. x', 'untitled fit 1', 'Location', 'NorthEast' );
+% Label axes
+xlabel x
+ylabel y
+grid on
+a = get(gca,'Children');
+xdata = get(a, 'XData');
+ydata = get(a, 'YData');
+x = xdata{1};
+y = ydata{1};
+E0 = x(y == max(y));
+%}
 
 

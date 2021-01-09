@@ -47,33 +47,23 @@ if strcmp( osc.model,'Drude')
     eps = complex(eps_re,eps_im);
     ELF = imag(-1./eps);
 elseif strcmp( osc.model,'DrudeLindhard')
-%     sumoneovereps = complex(1,0);    
-%     for j=1:length(osc.A)
-%         [epsDrud_re, epsDrud_im] = DrudeLindhard(q,w,osc.Om(j),osc.G(j),osc.alpha,osc.Ef);
-%         oneoverepsDL = complex(epsDrud_re, -epsDrud_im);
-%         sumoneovereps = sumoneovereps + osc.A(j) * (oneoverepsDL - complex(1, 0));
-%     end
-%     eps = complex(1, 0) ./ sumoneovereps;
-%     ELF = imag(-1./eps);
-    
-    eps_re = ones(numel(w),numel(q));
-    eps_im = zeros(numel(w),numel(q));
+    sumoneovereps = complex(1,0);    
     for j=1:length(osc.A)
         [epsDrud_re, epsDrud_im] = DrudeLindhard(q,w,osc.Om(j),osc.G(j),osc.alpha,osc.Ef);
-        eps_re = eps_re + osc.A(j)*epsDrud_re;
-        eps_im(w>osc.egap,:) = eps_im(w>osc.egap,:) + osc.A(j)*epsDrud_im(w>osc.egap,:);
+        oneoverepsDL = complex(epsDrud_re, -epsDrud_im);
+        sumoneovereps = sumoneovereps + osc.A(j) * (oneoverepsDL - complex(1, 0));
     end
-    ELF = eps_im;
-elseif strcmp( osc.model,'DrudeLorentz')
+    eps = complex(1, 0) ./ sumoneovereps;
+    ELF = imag(-1./eps);
     
-    eps_re = ones(numel(w),numel(q));
-    eps_im = zeros(numel(w),numel(q));
-    for j=1:length(osc.A)
-        [epsDrud_re, epsDrud_im] = DrudeLorentz(q,w,osc.Om(j),osc.G(j),osc.alpha_g(j),osc.beta_g(j),osc.alpha,osc.Ef);
-        eps_re = eps_re + osc.A(j)*epsDrud_re;
-        eps_im(w>osc.egap,:) = eps_im(w>osc.egap,:) + osc.A(j)*epsDrud_im(w>osc.egap,:);
-    end
-    ELF = eps_im;
+%     eps_re = ones(numel(w),numel(q));
+%     eps_im = zeros(numel(w),numel(q));
+%     for j=1:length(osc.A)
+%         [epsDrud_re, epsDrud_im] = DrudeLindhard(q,w,osc.Om(j),osc.G(j),osc.alpha,osc.Ef);
+%         eps_re = eps_re + osc.A(j)*epsDrud_re;
+%         eps_im(w>osc.egap,:) = eps_im(w>osc.egap,:) + osc.A(j)*epsDrud_im(w>osc.egap,:);
+%     end
+%     ELF = eps_im;
 elseif strcmp(osc.model,'Mermin')
     eps1 = zeros(numel(w),numel(q));
     for j=1:length(osc.A)
@@ -98,4 +88,13 @@ else
     error('Choose the correct model name: Drude,DrudeLindhard,Mermin,Mermin_LL');
     
 end
+
+%{
+fn = [osc.name,'_',osc.model,'.diel'];
+fileID = fopen(fn,'w');
+for i = 1:length(osc.eloss)
+    fprintf(fileID, '%.4f %.4f %.4f %.4f \n', [osc.eloss(i)*h2ev eps_re(i) eps_im(i) ELF(i)]);
+end
+fclose(fileID);
+%}
 end

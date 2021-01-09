@@ -57,7 +57,7 @@ elseif strcmp( osc.model,'DrudeLindhard')
     sumoneovereps = complex(0,0);   
     for j=1:length(osc.A)
         [epsDrud_re, epsDrud_im] = DrudeLindhard(q,w,osc.Om(j),osc.G(j),osc.alpha,osc.Ef);
-        oneoverepsDL = complex(epsDrud_re, epsDrud_im);
+        oneoverepsDL = complex(epsDrud_re, -epsDrud_im);
         sumoneovereps = sumoneovereps + osc.A(j) * (oneoverepsDL - complex(1, 0));
     end
     sumoneovereps = sumoneovereps + complex(1,0);

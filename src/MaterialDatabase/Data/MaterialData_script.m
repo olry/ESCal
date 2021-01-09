@@ -9,6 +9,8 @@ MaterialData = {};
 
 MaterialData.Au = Make_Au;
 
+MaterialData.F = Make_F;
+
 MaterialData.Mg = Make_Mg;
 
 MaterialData.Ag = Make_Ag;
@@ -47,4 +49,4 @@ MaterialData.Ta=Make_Ta;
 
 MaterialData.Mo=Make_Mo;
 
-clear Au Al Si Ag i Z Z2 O Nb Cu C W Be Mg H C_diamond C_glassy Ni Ti V Pd Mo Ta
+clear F Au Al Si Ag i Z Z2 O Nb Cu C W Be Mg H C_diamond C_glassy Ni Ti V Pd Mo Ta

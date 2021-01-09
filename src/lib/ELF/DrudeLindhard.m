@@ -18,6 +18,6 @@ function [eps_re, eps_im]=DrudeLindhard(q,w_global,omega0,gamma,alpha,FermiEnerg
     divisor = mm.^2 + w_global.^2*gamma^2;
 
     eps_re = bsxfun(@minus,w_global.^2,w_at_q.^2)*(omega0.^2)./divisor;
-    eps_im = -gamma*(omega0.^2).*bsxfun(@rdivide,w_global,divisor);
+    eps_im = gamma*(omega0.^2).*bsxfun(@rdivide,w_global,divisor);
     
 end

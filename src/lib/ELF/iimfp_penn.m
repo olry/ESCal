@@ -1,4 +1,4 @@
-function iimfp = iimfp_penn(E0,filename,colnum)
+function iimfp = iimfp_penn(E0, eloss, ELF)
 %%
 %{
    Calculates the IMFP values from optical data.
@@ -7,28 +7,8 @@ function iimfp = iimfp_penn(E0,filename,colnum)
 %}
 %%
 
-% l = load('aupal'); %load a file with Palik's data
-% au = l.au;
-% %structure of the experimental data file:
-% % 1 column - energy
-% % 2 column - n
-% % 3 column - k
-% 
-% eps1 = au(:,2).^2-au(:,3).^2;
-% eps2 = 2*au(:,2).*au(:,3);
-% 
-% x = au(:,1);
-% 
-% ind = find(histc(E0,x));
-% Im = eps2./(eps1.^2+eps2.^2);
+w = eloss/h2ev;
 
-l = load(filename); %load a file with Palik's data
-ind = find(histcounts(E0,l(:,1)));
-x = l(1:ind,1);
-
-w = x/h2ev;
-ELF = l(1:ind,colnum);
-    
 x_in = zeros(length(w),1);
     
     for i = 1:length(w)
@@ -61,7 +41,7 @@ x_in = zeros(length(w),1);
             end
         end
     end
-    iimfp = 1/trapz(x,x_in);
+    iimfp = 1/trapz(eloss,x_in);
 end
 
 function x = ddmfpp_integrand(de,hwp)

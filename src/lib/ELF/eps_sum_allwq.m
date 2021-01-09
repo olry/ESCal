@@ -50,11 +50,16 @@ if strcmp( osc.model,'Drude')
             eps_im = eps_im + osc.A(j)*epsDrud_im;
         end
     end
-    eps = complex(eps_re,eps_im);
+    epsilon = complex(eps_re,eps_im);
     if strcmp(interface,'bulk')
-        ELF = imag(-1./eps);
+%         ELF = imag(-1./epsilon);
+        ELF = eps_im ./ (eps_re.^2 + eps_im.^2);
     elseif strcmp(interface,'surface')
-        ELF = imag(-1./(eps+1));
+%         den = (eps_re.^2 + eps_re - eps_im.^2).^2 + (2*eps_re.*eps_im + eps_im).^2;
+%         enu = -eps_im.*(2*eps_re + 1).*((eps_re - 1).^2 - eps_im.^2);
+%         enu = enu + 2*eps_im.*(eps_re - 1).*(eps_re.*(eps_re + 1) - eps_im.^2);
+%         ELF = enu./den;
+        ELF = imag(-1./(epsilon + 1));
     end
 elseif strcmp( osc.model,'DrudeLindhard')
     sumoneovereps = complex(1,0);   
@@ -63,11 +68,16 @@ elseif strcmp( osc.model,'DrudeLindhard')
         oneoverepsDL = complex(epsDrud_re, -epsDrud_im);
         sumoneovereps = sumoneovereps + osc.A(j) * (oneoverepsDL - complex(1, 0));
     end
-    eps = complex(1, 0) ./ sumoneovereps;
+    epsilon = complex(1, 0) ./ sumoneovereps;
     if strcmp(interface,'bulk')
-        ELF = imag(-1./eps);
+        ELF = imag(-1./epsilon);
     elseif strcmp(interface,'surface')
-        ELF = imag(-1./(eps+1));
+        eps_re = real(epsilon);
+        eps_im = imag(epsilon);
+        den = (eps_re^2 + eps_re - eps_im^2)^2 + (2*eps_re*eps_im + eps_im)^2;
+        enu = -eps_im*(2*eps_re + 1)*((eps_re - 1)^2 - eps_im^2);
+        enu = enu + 2*eps_im*(eps_re - 1)*(eps_re*(eps_re + 1) - eps_im^2);
+        ELF = enu/den;
     end
     if gapEffect
         ELF(w<osc.egap,:) = 0;
@@ -96,11 +106,16 @@ elseif strcmp( osc.model,'Mermin')
         epsMerm = Mermin(q,w,osc.G(j),osc.Om(j));
         eps1 = eps1 + osc.A(j)*(complex(1,0)./epsMerm);
     end
-    eps = complex(1,0)./eps1;
+    epsilon = complex(1,0)./eps1;
     if strcmp(interface,'bulk')
-        ELF = imag(-1./eps);
+        ELF = imag(-1./epsilon);
     elseif strcmp(interface,'surface')
-        ELF = imag(-1./(eps+1));
+        eps_re = real(epsilon);
+        eps_im = imag(epsilon);
+        den = (eps_re^2 + eps_re - eps_im^2)^2 + (2*eps_re*eps_im + eps_im)^2;
+        enu = -eps_im*(2*eps_re + 1)*((eps_re - 1)^2 - eps_im^2);
+        enu = enu + 2*eps_im*(eps_re - 1)*(eps_re*(eps_re + 1) - eps_im^2);
+        ELF = enu/den;
     end
     if gapEffect
         ELF(w<osc.egap,:) = 0;
@@ -111,8 +126,8 @@ elseif strcmp( osc.model,'MerminLL')
         epsMerm = Mermin_LL(q,w,osc.G(j),osc.Om(j),osc.u);
         eps1 = eps1 + osc.A(j)*(complex(1,0)./epsMerm);
     end
-    eps = complex(1,0)./eps1;
-    ELF = imag(-1./eps);
+    epsilon = complex(1,0)./eps1;
+    ELF = imag(-1./epsilon);
 else
     error('Choose the correct model name: Drude,DrudeLindhard,Mermin,MerminLL');
     

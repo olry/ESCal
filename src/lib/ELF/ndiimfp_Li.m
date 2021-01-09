@@ -1,4 +1,4 @@
-function [diimfp,dsep,siimfp] = ndiimfp_Li(osc,E0,depth,alpha,decdigs,xraypath,varargin)
+function [diimfp,dsep,reduced_diimfp] = ndiimfp_Li(osc,E0,depth,alpha,decdigs,varargin)
 
 %%
 %{
@@ -12,139 +12,127 @@ function [diimfp,dsep,siimfp] = ndiimfp_Li(osc,E0,depth,alpha,decdigs,xraypath,v
 if nargin<5, decdigs=10; end
 if nargin<4
     warning ('Error in input format')
-else
-       
-    qmin = log(sqrt(2*E0/h2ev)-sqrt(2*(E0/h2ev-osc.eloss/h2ev)));
-    qmax = log(sqrt(2*E0/h2ev)+sqrt(2*(E0/h2ev-osc.eloss/h2ev)));
-    q = zeros(length(osc.eloss),2^(decdigs-1)+1);
-    
-    for i = 1:2^(decdigs-1)+1
-        q(:,i) = qmin + (i-1)*(qmax-qmin)/2.^(decdigs-1);
+else   
+    %% Clear bulk
+    if depth >= 0
+        x_in_b = ndiimfp(osc,E0,10,false);
+    else
+        x_in_b = zeros(size(osc.eloss));
     end
-    
+
+    %% Reduced bulk
+
+    theta = 0:pi/2/5:pi/2;
+    phi = 0:2*pi/10:2*pi;
+    v = sqrt(2*E0/h2ev);
+
+    q = zeros(length(osc.eloss),2^(decdigs-1)+1);
+    Im = zeros(length(osc.eloss),2^(decdigs-1)+1,length(theta));
+    x_in_s = zeros(size(osc.eloss));
+
+    q_minus = sqrt(2*E0/h2ev) - sqrt(2*(E0/h2ev-osc.eloss/h2ev));
+    q_plus =  sqrt(2*E0/h2ev) + sqrt(2*(E0/h2ev-osc.eloss/h2ev));
+
+    for i = 1:2^(decdigs-1)+1
+        q(:,i) = q_minus + (i-1)*(q_plus-q_minus)/2.^(decdigs-1);
+    end   
     if strcmp(osc.model,'Mermin')
         q(q==0) = 0.01;
     end
-    
-    osc.qtran = exp(q)/a0;
-    
-    %% Clear bulk
-    x_in_b = zeros(size(osc.eloss));
-    
-    ELF = eps_sum_allwq(osc,'bulk',true);
-    ELF(isnan(ELF)) = 0;
 
-    x_in_b(1) = 0;
-    for i = 2:length(osc.eloss)
-        x_in_b(i) = 1/pi/(E0/h2ev) * trapz(q(i,:),ELF(i,:))/h2ev/a0;
-    end
-
-    %% Surface
-    
-    qmin = sqrt(2*E0/h2ev)-sqrt(2*(E0/h2ev-osc.eloss/h2ev));
-    qmax = sqrt(2*E0/h2ev)+sqrt(2*(E0/h2ev-osc.eloss/h2ev));
-
-    for i = 1:2^(decdigs-1)+1
-        q(:,i) = qmin + (i-1)*(qmax-qmin)/2.^(decdigs-1);
-    end
-    
-    if strcmp(osc.model,'Mermin')
-        q(0.001<q==0) = 0.01;
-    end
-        
-    theta = 0:pi/2/5:pi/2;
-    phi = 0:2*pi/10:2*pi;
-    
-    Im = zeros(length(osc.eloss),2^(decdigs-1)+1,length(theta));
-    x_in = zeros(length(osc.eloss),length(depth));
-    
     Q = bsxfun(@times,repmat(q, 1, 1, length(theta)),reshape(sin(theta),1,1,[]));
     indQ = bsxfun(@eq,Q,0);
-    Q(indQ) = 0.0001;
-       
+    Q(indQ) = eps;
+
     qz = bsxfun(@times,repmat(q, 1, 1, length(theta)),reshape(cos(theta),1,1,[]));
-    v_per = cosd(alpha).*sqrt(2*E0/h2ev);
-    r = depth./a0./cosd(alpha);
-    %exdimr = repmat(qz, 1, 1, 1,length(phi)); %add extra dimension over phi
-%     qzrcos = bsxfun(@times,exdimr,cosd(alpha));
-    qzrcos = qz.*cosd(alpha);
+
+    v_perpendicular = cosd(alpha).* v;
+
+    r = depth./a0; %./cosd(alpha);
+
+    qz_r_cosalpha = qz.*cosd(alpha).*r;
+    q_sinsquared_theta = bsxfun(@times,repmat(q, 1, 1, length(theta)),reshape(sin(theta).^2,1,1,[]));
+
+    top = q_sinsquared_theta .* cos(qz_r_cosalpha) .* exp(-abs(r).*Q.*cosd(alpha));
+
+    % w_wave
+    qv_sintheta = bsxfun(@times,repmat(q .* v, 1, 1, length(theta)),reshape(sin(theta),1,1,[]));
+    exdim = repmat(qv_sintheta, 1, 1, 1, length(phi)); %add extra dimension over phi
+    qv_sintheta_cos_phi = bsxfun(@times,exdim,reshape(cos(phi),1,1,1,[]));    
+    w_wave = bsxfun(@minus,repmat((osc.eloss'/h2ev)',1,2^(decdigs-1)+1,length(theta),length(phi)), qv_sintheta_cos_phi.*sind(alpha));
+
+    Qv_perpendicular_squared = Q.^2.*v_perpendicular^2;
+
+    bottom = bsxfun(@plus,w_wave.^2,Qv_perpendicular_squared);
+
+    %      exdimdep = repmat(Q, 1, 1, 1, length(phi),length(r)); %add extra dimension over r
+    %      exprQ = bsxfun(@times,reshape((-1)*abs(r),1,1,1,1,[]),exdimdep).*cosd(alpha);
+    %      top_in = bsxfun(@times,bsxfun(@times,q_sinsquared_theta,cos(qz_r_cosalpha)),exp(exprQ));
+
+    for i = 1:length(theta)
+        osc.qtran = Q(:,:,i)/a0;
+        Im(:,:,i) = eps_sum_allwq(osc,'bulk');
+    end
+
+    %      topbot = bsxfun(@rdivide,top_in,repmat(bottom, 1, 1, 1, 1, length(r)));
+    topbot = bsxfun(@rdivide,top,bottom);
+    if depth >= 0 
+        romall_in = bsxfun(@times,Im,topbot);
+        romall_in(isnan(romall_in)) = 0;
+        romall_in = romall_in.*stepfunction(r);
+        res_in = squeeze(trapz(theta,trapz(phi,romall_in,4),3));
+
+        x_in_b_reduced = zeros(size(osc.eloss));
+
+        for i = 1:length(osc.eloss)
+            x_in_b_reduced(i) = (-2)*cosd(alpha)/(pi^3) * trapz(q(i,:),res_in(i,:),2)*1/h2ev/a0;
+        end
+    else
+        x_in_b_reduced = zeros(size(osc.eloss));
+    end
+     
+    %% Surface
     
-    qsintheta = bsxfun(@times,repmat(q, 1, 1, length(theta)),reshape(sin(theta).^2,1,1,[]));
-    
-    qvsintheta = bsxfun(@times,repmat(q.*sqrt(2*E0/h2ev), 1, 1, length(theta)),reshape(sin(theta),1,1,[]));
-    exdim = repmat(qvsintheta, 1, 1, 1, length(phi)); %add extra dimension over phi
-    B = bsxfun(@times,exdim,reshape(cos(phi),1,1,1,[]));
-    
-    w_wave = bsxfun(@minus,repmat((osc.eloss'/h2ev)',1,2^(decdigs-1)+1,length(theta),length(phi)),B.*sind(alpha));
-    Qv_per = Q.^2.*v_per^2;
-    bottom = bsxfun(@plus,w_wave.^2,Qv_per);
-              
     for i = 1:length(theta)
         osc.qtran = Q(:,:,i)/a0;
         Im(:,:,i) = eps_sum_allwq(osc,'surface',true);
     end
-    
-    for dep = 1:length(r)
-        top_in = (qsintheta.*cos(qzrcos.*r(dep))).*exp(Q.*cosd(alpha).*(-abs(r(dep))));   
-        topbot = bsxfun(@rdivide,top_in,bottom);
-        %================= inside ===================
-        romall_in = bsxfun(@times,Im,topbot);
-        romall_in(isnan(romall_in)) = 0;
-        romall_in = romall_in.*stepfunction(r(dep));
-        res_in = squeeze(trapz(theta,trapz(phi,romall_in,4),3));
+   
+    %================= inside ===================
+    romall_in = bsxfun(@times,Im,topbot);
+    romall_in(isnan(romall_in)) = 0;
+    romall_in = romall_in.*stepfunction(r);
+    res_in = squeeze(trapz(theta,trapz(phi,romall_in,4),3));
 
-        %================= outside ==================
-        top_out = bsxfun(@times,qsintheta,exp(Q.*cosd(alpha).*(-abs(r(dep)))));
-        cosw = w_wave.*r(dep);
-        add = 2.*cos(cosw./sqrt(2*E0/h2ev))-exp(Q.*cosd(alpha).*(-abs(r(dep))));
+    %================= outside ==================
+    top = q_sinsquared_theta .* exp(-abs(r).*Q.*cosd(alpha));
+    topbot = bsxfun(@rdivide,top,bottom);
+    
+    add = 2.*cos(w_wave.*r./v) - exp(-abs(r).*Q.*cosd(alpha));
 
-        romall_out = bsxfun(@times,Im,top_out./bottom).*add;
-        romall_out(isnan(romall_out))=0;
-        romall_out = romall_out.*stepfunction(-r(dep));
-        res_out = squeeze(trapz(theta,trapz(phi,romall_out,4),3));
+    romall_out = bsxfun(@times,Im,topbot).*add;
+    romall_out(isnan(romall_out)) = 0;
+    romall_out = romall_out.*stepfunction(-r);
+    res_out = squeeze(trapz(theta,trapz(phi,romall_out,4),3));
 
-        for i=1:length(osc.eloss)
-            x_in(i,dep) = 4*cosd(alpha)/(pi^3)/h2ev/a0 * (trapz(q(i,:),res_in(i,:)) + trapz(q(i,:),res_out(i,:)));
-        end   
-    end
+    for i = 1:length(osc.eloss)
+        x_in_s(i) = 4*cosd(alpha)/(pi^3) * (trapz(q(i,:),res_in(i,:)) + trapz(q(i,:),res_out(i,:)))*1/h2ev/a0;
+    end   
+
     
-    %% siimfp/biimfp
-    siimfp = trapz(osc.eloss,x_in); % + x_b + x_in_b,1);
-%     biimfp = trapz(osc.eloss,x_in_b+x_b,1);
-%     biimfp(biimfp<0)=0;
-%     iimfp = trapz(osc.eloss,x_in_b+x_b+x_in,1);
-%     figure;
-%     plot(depth,siimfp,depth,biimfp,depth,siimfp+biimfp)
-    
-    %% Plot
-%     figure;
-%     xlim([0 100])
-%     hold on
-%     box on
-%     plot(osc.eloss,x_b(:,1))
-%     plot(osc.eloss,x_b(:,1) + x_in_b(:,1))
-%     plot(osc.eloss,x_in(:,1))
-%     plot(osc.eloss,x_b(:,1) + x_in_b(:,1) + x_in(:,1))
-%     legend('Clear bulk','Reduced bulk','Surface','DIIMFP');
-%     
-%     Y = ['siimfp = ',num2str(siimfp)];
-%     disp(Y);
-%     Y = ['biimfp = ',num2str(biimfp)];
-%     disp(Y);
-    
-    %dsep = (x_in+x_b+x_in_b)./trapz(osc.eloss,x_in+x_b+x_in_b);
-    %dsep = x_in + x_b + x_in_b; %./trapz(osc.eloss,x_in); 
-    dsep = x_in; %./trapz(osc.eloss,x_in); % only surface component
-    diimfp = x_in_b; %./trapz(osc.eloss,x_b);   % clear bulk  
+    %%     
+    dsep = x_in_s; % only surface component
+    diimfp = x_in_b; % clear bulk  
+    reduced_diimfp = x_in_b_reduced; % reduced bulk
 end
 
-%% Heaviside function
+    %% Heaviside function
     function x = stepfunction(depth)
         if depth > 0
             x = 1;
         elseif depth < 0
             x = 0;
-        elseif depth==0
+        elseif depth == 0
             x = 0.5;
         end
     end
