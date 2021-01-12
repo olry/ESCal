@@ -29,7 +29,7 @@ osc_max.A = ones(size(osc.A))*coef;
 osc_max.Om = ones(size(osc.Om))*1000;
 
 if osc.H ~= 0
-    osc_min.H = eps;
+    osc_min.H = osc.H;
     osc_max.H = 0.05;
 end
 if osc.D ~= 0
@@ -55,7 +55,7 @@ an = scaling(an,xraypath);
 opt.algorithm = NLOPT_LN_COBYLA;
 opt.lower_bounds = lb;
 opt.upper_bounds = ub;
-opt.maxeval = 10000;
+opt.maxeval = 8000;
 opt.min_objective = @fit_func_nlopt;
 opt.fc = { (@(x) aconstraint(x)) };
 opt.fc_tol = 1e-8; 

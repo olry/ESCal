@@ -95,7 +95,7 @@ else
     
     for i = 1:length(theta)
         osc.qtran = Q(:,:,i)/a0;
-        Im(:,:,i) = eps_sum_allwq(osc,'surface',true);
+        Im(:,:,i) = eps_sum_allwq(osc,'surface');
     end
    
     %================= inside ===================
