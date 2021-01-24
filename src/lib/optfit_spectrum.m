@@ -11,6 +11,7 @@ switch osc.model
     case 'Drude'
         coef = 1e3;
         osc_max.G = ones(size(osc.G))*100;
+        osc_max.G(1) = osc.G(1)*1.2;
     case 'DrudeLindhard'
         coef = 1;
         osc_max.G = ones(size(osc.G))*100;
@@ -26,6 +27,7 @@ switch osc.model
 end
        
 osc_max.A = ones(size(osc.A))*coef;
+osc_max.A(1) = osc.A(1)*1.5;
 osc_max.Om = ones(size(osc.Om))*1000;
 
 if osc.H ~= 0
